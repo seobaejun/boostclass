@@ -58,8 +58,14 @@ async function getAdminStats() {
     let recentCourses = 0
     let recentPurchases = 0
     let recentRevenue = 0
+    let totalCommunityPosts = 0
+    let recentCommunityPosts = 0
     let popularCourses: any[] = []
     let recentActivities: any[] = []
+
+    // 최근 7일간 날짜 계산 (모든 통계에서 공통 사용)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
     try {
       // 1. 사용자 통계
@@ -73,9 +79,6 @@ async function getAdminStats() {
       }
 
       // 최근 7일간 신규 사용자
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      
       const { count: recentUserCount } = await supabase
         .from('user_profiles')
         .select('*', { count: 'exact', head: true })
@@ -113,6 +116,31 @@ async function getAdminStats() {
       }
     } catch (error) {
       console.log('강의 통계 조회 실패:', error)
+    }
+
+    try {
+      // 3. 커뮤니티 통계
+      const { count: communityCount } = await supabase
+        .from('community_posts')
+        .select('*', { count: 'exact', head: true })
+      
+      if (communityCount !== null) {
+        totalCommunityPosts = communityCount
+        console.log('📊 총 커뮤니티 게시글 수:', totalCommunityPosts)
+      }
+
+      // 최근 7일간 커뮤니티 게시글
+      const { count: recentCommunityCount } = await supabase
+        .from('community_posts')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString())
+      
+      if (recentCommunityCount !== null) {
+        recentCommunityPosts = recentCommunityCount
+        console.log('📊 최근 7일 커뮤니티 게시글 수:', recentCommunityPosts)
+      }
+    } catch (error) {
+      console.log('커뮤니티 통계 조회 실패:', error)
     }
 
     try {
@@ -281,6 +309,8 @@ async function getAdminStats() {
         recentUsers,
         totalCourses,
         recentCourses,
+        totalCommunityPosts,
+        recentCommunityPosts,
         totalPurchases,
         recentPurchases,
         totalRevenue,
@@ -307,6 +337,8 @@ async function getAdminStats() {
         recentUsers: 0,
         totalCourses: 0,
         recentCourses: 0,
+        totalCommunityPosts: 0,
+        recentCommunityPosts: 0,
         totalPurchases: 0,
         recentPurchases: 0,
         totalRevenue: 0,

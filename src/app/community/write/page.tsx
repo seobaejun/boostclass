@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { ArrowLeft, Save, Eye } from 'lucide-react'
 
 export default function WritePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     title: '',
     category: '정보공유',
@@ -15,6 +18,7 @@ export default function WritePage() {
     tags: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const categories = [
     { value: '정보공유', label: '정보공유' },
@@ -30,22 +34,64 @@ export default function WritePage() {
     }))
   }
 
+  const handleTagKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault() // 폼 제출 방지
+      // 엔터키가 눌렸을 때 아무것도 하지 않음 (태그 추가 기능은 나중에 구현)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
     try {
-      // 실제로는 API 호출
-      console.log('게시글 작성:', formData)
+      // 로그인 확인
+      if (!user) {
+        setError('로그인이 필요합니다.')
+        router.push('/auth/login')
+        return
+      }
+
+      // 세션 토큰 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
       
-      // 임시로 2초 대기
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      if (!session?.access_token) {
+        setError('로그인이 필요합니다.')
+        router.push('/auth/login')
+        return
+      }
+
+      console.log('📝 게시글 작성 시작:', formData)
       
-      alert('게시글이 성공적으로 작성되었습니다!')
-      router.push('/community')
-    } catch (error) {
-      console.error('게시글 작성 실패:', error)
-      alert('게시글 작성에 실패했습니다. 다시 시도해주세요.')
+      // API 호출
+      const response = await fetch('/api/community', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '게시글 작성에 실패했습니다.')
+      }
+
+      if (data.success) {
+        console.log('✅ 게시글 작성 완료:', data.post)
+        alert('게시글이 성공적으로 작성되었습니다!')
+        router.push('/community')
+      } else {
+        throw new Error(data.error || '게시글 작성에 실패했습니다.')
+      }
+      
+    } catch (error: any) {
+      console.error('❌ 게시글 작성 실패:', error)
+      setError(error.message || '게시글 작성에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
@@ -82,6 +128,13 @@ export default function WritePage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">게시글 작성</h2>
+            
+            {/* 오류 메시지 */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
             
             {/* 제목 */}
             <div className="mb-6">
@@ -149,6 +202,7 @@ export default function WritePage() {
                 name="tags"
                 value={formData.tags}
                 onChange={handleInputChange}
+                onKeyPress={handleTagKeyPress}
                 placeholder="태그를 쉼표로 구분하여 입력해주세요 (예: 블로그, 수익화, 마케팅)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               />

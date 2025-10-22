@@ -1,137 +1,146 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 import { MessageCircle, Users, TrendingUp, Clock, ThumbsUp, MessageSquare, User, Search, Filter } from 'lucide-react'
 
-const posts = [
-  {
-    id: 1,
-    title: '인스타그램 마케팅 팁 공유',
-    author: '한인스타',
-    category: '정보공유',
-    content: '인스타그램 알고리즘 이해하고 팔로워 늘리는 방법들 정리해봤습니다.',
-    replies: 36,
-    likes: 52,
-    views: 1890,
-    timeAgo: '1일 전',
-    isHot: true
-  },
-  {
-    id: 2,
-    title: '직장인 부업 시간 관리 노하우',
-    author: '윤직장인',
-    category: '정보공유',
-    content: '회사 다니면서 부업하는 시간 관리 방법들을 공유합니다.',
-    replies: 19,
-    likes: 33,
-    views: 967,
-    timeAgo: '1일 전',
-    isHot: false
-  },
-  {
-    id: 3,
-    title: '디지털 노마드 준비 과정',
-    author: '강노마드',
-    category: '정보공유',
-    content: '디지털 노마드로 전환하기까지의 과정과 준비사항들을 정리했습니다.',
-    replies: 27,
-    likes: 38,
-    views: 1345,
-    timeAgo: '2일 전',
-    isHot: false
-  },
-  {
-    id: 4,
-    title: '구글 애드센스 승인 조건이 궁금해요',
-    author: '초보자김',
-    category: '질문답변',
-    content: '블로그 시작한 지 3개월인데 애드센스 승인 받을 수 있을까요?',
-    replies: 15,
-    likes: 8,
-    views: 234,
-    timeAgo: '3시간 전',
-    isHot: false
-  },
-  {
-    id: 5,
-    title: '유튜브 썸네일 만드는 프로그램 추천',
-    author: '유튜버준비생',
-    category: '질문답변',
-    content: '무료로 썸네일 잘 만들 수 있는 프로그램 있나요?',
-    replies: 23,
-    likes: 12,
-    views: 456,
-    timeAgo: '5시간 전',
-    isHot: false
-  },
-  {
-    id: 6,
-    title: '쿠팡 파트너스 수수료 계산법',
-    author: '이커머스',
-    category: '질문답변',
-    content: '쿠팡 파트너스 수수료가 어떻게 계산되는지 궁금합니다.',
-    replies: 18,
-    likes: 9,
-    views: 312,
-    timeAgo: '7시간 전',
-    isHot: false
-  },
-  {
-    id: 7,
-    title: '오늘 하루도 화이팅!',
-    author: '동기부여왕',
-    category: '자유게시판',
-    content: '모두들 수익화 목표 달성하시길 바랍니다. 함께 화이팅!',
-    replies: 45,
-    likes: 67,
-    views: 789,
-    timeAgo: '1시간 전',
-    isHot: true
-  },
-  {
-    id: 8,
-    title: '새해 목표 설정했어요',
-    author: '목표설정러',
-    category: '자유게시판',
-    content: '2024년 목표로 월 100만원 수익 달성하기로 했습니다.',
-    replies: 32,
-    likes: 41,
-    views: 567,
-    timeAgo: '2일 전',
-    isHot: false
+// 시간 포맷 함수
+const formatTimeAgo = (dateString: string) => {
+  const now = new Date()
+  const postDate = new Date(dateString)
+  const diffInMs = now.getTime() - postDate.getTime()
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}분 전`
+  } else if (diffInHours < 24) {
+    return `${diffInHours}시간 전`
+  } else {
+    return `${diffInDays}일 전`
   }
-]
-
-// 카테고리별 게시글 수 계산
-const getCategoryCount = (categoryName: string) => {
-  if (categoryName === '전체') return posts.length
-  return posts.filter(post => post.category === categoryName).length
 }
-
-const categories = [
-  { name: '전체', count: getCategoryCount('전체'), active: true },
-  { name: '정보공유', count: getCategoryCount('정보공유'), active: false },
-  { name: '질문답변', count: getCategoryCount('질문답변'), active: false },
-  { name: '자유게시판', count: getCategoryCount('자유게시판'), active: false }
-]
 
 export default function CommunityPage() {
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // 필터링된 게시글
-  const filteredPosts = posts.filter(post => {
-    const matchesCategory = selectedCategory === '전체' || post.category === selectedCategory
-    const matchesSearch = searchTerm === '' || 
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.author.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  // 실제 데이터 가져오기
+  useEffect(() => {
+    fetchPosts()
+  }, [])
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true)
+      console.log('📚 커뮤니티 게시글 조회 시작...')
+      
+      const response = await fetch('/api/community')
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log('✅ 커뮤니티 게시글 조회 성공:', data.posts)
+        const formattedPosts = data.posts.map((post: any) => ({
+          id: post.id,
+          title: post.title,
+          author: post.author_name,
+          category: post.category,
+          content: post.content,
+          commentCount: post.commentCount || 0, // 실제 댓글 수 사용
+          likes: post.likes || 0,
+          views: post.views || 0,
+          timeAgo: formatTimeAgo(post.created_at),
+          isHot: (post.likes || 0) > 10 || (post.views || 0) > 100
+        }))
+        setPosts(formattedPosts)
+      } else {
+        console.error('❌ 커뮤니티 게시글 조회 실패:', data.error)
+        setError('게시글을 불러오는데 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('❌ 커뮤니티 게시글 조회 중 오류:', error)
+      setError('게시글을 불러오는데 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLike = async (postId: string) => {
+    try {
+      // 로그인 확인
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      console.log('👍 좋아요 요청:', postId)
+      
+      const response = await fetch(`/api/community/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log('✅ 좋아요 성공:', data.likes)
+        
+        // 게시글 목록에서 좋아요 수 업데이트
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { ...post, likes: data.likes }
+              : post
+          )
+        )
+      } else {
+        console.error('❌ 좋아요 실패:', data.error)
+        alert(data.error || '좋아요 처리에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('❌ 좋아요 오류:', error)
+      alert('좋아요 처리 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 카테고리별 게시글 수 계산 (useMemo로 최적화)
+  const categories = useMemo(() => {
+    const getCategoryCount = (categoryName: string) => {
+      if (categoryName === '전체') return posts.length
+      return posts.filter(post => post.category === categoryName).length
+    }
+
+    return [
+      { name: '전체', count: getCategoryCount('전체'), active: true },
+      { name: '정보공유', count: getCategoryCount('정보공유'), active: false },
+      { name: '질문답변', count: getCategoryCount('질문답변'), active: false },
+      { name: '자유게시판', count: getCategoryCount('자유게시판'), active: false }
+    ]
+  }, [posts])
+
+  // 필터링된 게시글 (useMemo로 최적화)
+  const filteredPosts = useMemo(() => {
+    return posts.filter(post => {
+      const matchesCategory = selectedCategory === '전체' || post.category === selectedCategory
+      const matchesSearch = searchTerm === '' || 
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.author.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesCategory && matchesSearch
+    })
+  }, [posts, selectedCategory, searchTerm])
 
   // 페이지네이션
   const postsPerPage = 8
@@ -260,10 +269,30 @@ export default function CommunityPage() {
 
             {/* Posts List */}
             <div className="space-y-4">
-              {paginatedPosts.length === 0 ? (
+              {loading ? (
                 <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                  <div className="text-gray-500 text-lg mb-4">검색 결과가 없습니다</div>
-                  <p className="text-gray-400">다른 검색어나 카테고리를 시도해보세요</p>
+                  <div className="text-gray-500 text-lg mb-4">게시글을 불러오는 중...</div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : error ? (
+                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                  <div className="text-red-500 text-lg mb-4">오류가 발생했습니다</div>
+                  <p className="text-gray-400 mb-4">{error}</p>
+                  <button 
+                    onClick={fetchPosts}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              ) : paginatedPosts.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                  <div className="text-gray-500 text-lg mb-4">
+                    {posts.length === 0 ? '아직 작성된 게시글이 없습니다' : '검색 결과가 없습니다'}
+                  </div>
+                  <p className="text-gray-400">
+                    {posts.length === 0 ? '첫 번째 게시글을 작성해보세요!' : '다른 검색어나 카테고리를 시도해보세요'}
+                  </p>
                 </div>
               ) : (
                 paginatedPosts.map((post) => (
@@ -303,12 +332,18 @@ export default function CommunityPage() {
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center">
                           <MessageCircle className="w-4 h-4 mr-1" />
-                          {post.replies}
+                          {post.commentCount || 0}
                         </div>
-                        <div className="flex items-center">
+                        <button 
+                          className="flex items-center hover:text-blue-600 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleLike(post.id)
+                          }}
+                        >
                           <ThumbsUp className="w-4 h-4 mr-1" />
-                          {post.likes}
-                        </div>
+                          {post.likes || 0}
+                        </button>
                         <div className="flex items-center">
                           <Users className="w-4 h-4 mr-1" />
                           {post.views}

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 // 환경 변수에서 Supabase 설정 가져오기
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -41,7 +41,7 @@ console.log('🔧 Supabase 설정:', {
 })
 
 // Supabase 클라이언트 생성
-export const supabase = createClient(finalUrl, finalKey, {
+export const supabase = createSupabaseClient(finalUrl, finalKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -51,8 +51,6 @@ export const supabase = createClient(finalUrl, finalKey, {
 
 // createClient 함수 (API 라우트에서 사용)
 export function createClient() {
-  const { createClient: createSupabaseClient } = require('@supabase/supabase-js')
-  
   // API 라우트에서도 같은 키 사용 (RLS 우회를 위해 서비스 키 우선 사용)
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || finalKey
   

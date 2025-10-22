@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   FileText,
   MessageSquare,
@@ -85,11 +85,13 @@ type ContentType = 'notices' | 'community' | 'reviews' | 'success-stories'
 
 export default function ContentPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<ContentType>('notices')
+  const [activeTab, setActiveTab] = useState<ContentType>('community')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -97,12 +99,18 @@ export default function ContentPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [editForm, setEditForm] = useState<any>({})
+  const [items, setItems] = useState<any[]>([])
+  const [totalItems, setTotalItems] = useState(0)
 
   const itemsPerPage = 10
 
+  // 페이지네이션 계산 (서버 사이드 페이지네이션)
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const paginatedItems = items // 서버에서 이미 페이지네이션된 데이터
+
   useEffect(() => {
     fetchContent()
-  }, [activeTab, currentPage, searchTerm, statusFilter])
+  }, [activeTab, currentPage, searchTerm, statusFilter, selectedCategory, selectedStatus])
 
   // 핸들러 함수들
   const handleItemClick = (item: any) => {
@@ -120,21 +128,50 @@ export default function ContentPage() {
     setEditForm({
       title: item.title,
       content: item.content,
+      category: item.category,
       status: item.status,
-      priority: item.priority,
-      featured: item.featured
+      tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
     })
     setShowEditModal(true)
   }
 
-  const handleSaveEdit = () => {
-    console.log('콘텐츠 수정 저장:', editForm)
-    // 실제 API 호출 로직 추가
-    setShowEditModal(false)
-    setEditingItem(null)
-    setEditForm({})
-    // 데이터 새로고침
-    fetchContent()
+  const handleSaveEdit = async () => {
+    try {
+      console.log('콘텐츠 수정 저장:', editForm)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      const response = await fetch(`/api/admin/content/${activeTab}/${editingItem.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(editForm)
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log('✅ 콘텐츠 수정 성공')
+        alert('콘텐츠가 성공적으로 수정되었습니다.')
+        setShowEditModal(false)
+        setEditingItem(null)
+        setEditForm({})
+        // 데이터 새로고침
+        fetchContent()
+      } else {
+        console.error('❌ 콘텐츠 수정 실패:', data.error)
+        alert(data.error || '콘텐츠 수정에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('❌ 콘텐츠 수정 오류:', error)
+      alert('콘텐츠 수정 중 오류가 발생했습니다.')
+    }
   }
 
   const handleDeleteItem = (item: any) => {
@@ -142,13 +179,60 @@ export default function ContentPage() {
     setShowDeleteModal(true)
   }
 
-  const handleConfirmDelete = () => {
-    console.log('콘텐츠 삭제:', editingItem)
-    // 실제 API 호출 로직 추가
-    setShowDeleteModal(false)
-    setEditingItem(null)
-    // 데이터 새로고침
-    fetchContent()
+  const handleConfirmDelete = async () => {
+    try {
+      console.log('콘텐츠 삭제:', editingItem)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+      const response = await fetch(`/api/admin/content/${activeTab}/${editingItem.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        }
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log('✅ 콘텐츠 삭제 성공')
+        alert('콘텐츠가 성공적으로 삭제되었습니다.')
+        setShowDeleteModal(false)
+        setEditingItem(null)
+        // 데이터 새로고침
+        fetchContent()
+      } else {
+        console.error('❌ 콘텐츠 삭제 실패:', data.error)
+        alert(data.error || '콘텐츠 삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('❌ 콘텐츠 삭제 오류:', error)
+      alert('콘텐츠 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+    setCurrentPage(1) // 검색 시 첫 페이지로 이동
+  }
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(category)
+    setCurrentPage(1) // 필터 변경 시 첫 페이지로 이동
+  }
+
+  const handleStatusFilter = (status: string) => {
+    setSelectedStatus(status)
+    setCurrentPage(1) // 필터 변경 시 첫 페이지로 이동
   }
 
   const getStatusText = (status: string) => {
@@ -206,45 +290,64 @@ export default function ContentPage() {
         return
       }
 
+      // 세션 토큰 가져오기
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        setError('로그인이 필요합니다.')
+        setLoading(false)
+        return
+      }
+
       // 실제 API 호출로 콘텐츠 데이터 가져오기
-      const response = await fetch(`/api/admin/content/${activeTab}`, {
+      console.log('🔄 API 호출 시작:', `/api/admin/content/${activeTab}`)
+      console.log('🔑 토큰:', session.access_token ? '존재' : '없음')
+      
+      // URL 파라미터 구성
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      
+      // 상태 필터링 - selectedStatus를 우선 사용, 없으면 statusFilter 사용
+      const finalStatus = selectedStatus !== 'all' ? selectedStatus : statusFilter
+      if (finalStatus !== 'all') params.append('status', finalStatus)
+      
+      if (selectedCategory !== 'all') params.append('category', selectedCategory)
+      params.append('page', currentPage.toString())
+      params.append('limit', itemsPerPage.toString())
+
+      const url = `/api/admin/content/${activeTab}?${params.toString()}`
+      console.log('🔍 API URL:', url)
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
       })
 
+      console.log('📥 API 응답 상태:', response.status)
+      console.log('📥 API 응답 OK:', response.ok)
+
       if (!response.ok) {
-        throw new Error('콘텐츠 데이터를 가져오는데 실패했습니다.')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ API 오류 응답:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}: 콘텐츠 데이터를 가져오는데 실패했습니다.`)
       }
 
       const data = await response.json()
-      const allItems = data.items || []
-
-      // 필터링 적용
-      let filteredItems = allItems
-
-      // 검색어 필터링
-      if (searchTerm) {
-        filteredItems = filteredItems.filter(item =>
-          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.author.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      console.log('📥 API 응답 데이터:', data)
+      
+      if (data.success) {
+        const allItems = data.items || []
+        
+        // 서버에서 이미 필터링된 데이터를 사용
+        setItems(allItems)
+        setTotalItems(data.total || allItems.length)
+      } else {
+        throw new Error(data.error || '콘텐츠 데이터를 가져오는데 실패했습니다.')
       }
 
-      // 상태 필터링
-      if (statusFilter !== 'all') {
-        filteredItems = filteredItems.filter(item => item.status === statusFilter)
-      }
-
-      const totalItems = filteredItems.length
-      const totalPages = Math.ceil(totalItems / itemsPerPage)
-      const startIndex = (currentPage - 1) * itemsPerPage
-      const endIndex = startIndex + itemsPerPage
-      const paginatedItems = filteredItems.slice(startIndex, endIndex)
-
-      // 상태 업데이트
       setLoading(false)
 
     } catch (err) {
@@ -254,15 +357,11 @@ export default function ContentPage() {
     }
   }
 
-
-
-
-
   const tabs = [
-    { id: 'notices', label: '공지사항', icon: FileText, count: 3 },
-    { id: 'community', label: '커뮤니티', icon: MessageSquare, count: 3 },
-    { id: 'reviews', label: '리뷰', icon: Star, count: 3 },
-    { id: 'success-stories', label: '성공 스토리', icon: Award, count: 3 }
+    { id: 'notices', label: '공지사항', icon: FileText, count: activeTab === 'notices' ? totalItems : 0 },
+    { id: 'community', label: '커뮤니티', icon: MessageSquare, count: activeTab === 'community' ? totalItems : 0 },
+    { id: 'reviews', label: '리뷰', icon: Star, count: activeTab === 'reviews' ? totalItems : 0 },
+    { id: 'success-stories', label: '성공 스토리', icon: Award, count: activeTab === 'success-stories' ? totalItems : 0 }
   ]
 
   if (loading) {
@@ -441,497 +540,190 @@ export default function ContentPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {/* 공지사항 데이터 */}
-              {activeTab === 'notices' && (
-                <>
-                  <tr className="hover:bg-gray-50">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-4 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">로딩 중...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedItems.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    콘텐츠가 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                paginatedItems.map((item, index) => (
+                  <tr key={item.id || index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">새로운 강의 출시 안내</div>
+                      <div className="text-sm font-medium text-gray-900">{item.title}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">관리자</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.instructor || item.author || '관리자'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                        {getStatusText(item.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        높음
-                      </span>
+                    {activeTab === 'notices' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.priority || '보통'}
+                      </td>
+                    )}
+                    {activeTab === 'community' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.category || '-'}
+                      </td>
+                    )}
+                    {activeTab === 'reviews' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.rating ? '⭐'.repeat(item.rating) : '-'}
+                      </td>
+                    )}
+                    {activeTab === 'success-stories' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.featured ? '추천' : '-'}
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.views || 0}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1,250</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 15일</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(item.createdAt || item.created_at).toLocaleDateString()}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button 
-                          onClick={() => handleItemClick({
-                            id: 'notice-1',
-                            title: '새로운 강의 출시 안내',
-                            content: '다음 주에 새로운 React 강의가 출시됩니다. 많은 관심 부탁드립니다.',
-                            author: '관리자',
-                            status: 'published',
-                            priority: 'high',
-                            views: 1250,
-                            created_at: '2024-01-15T10:00:00Z',
-                            updated_at: '2024-01-15T10:00:00Z'
-                          })}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                          title="상세보기"
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleItemClick(item)}
+                          className="text-blue-600 hover:text-blue-900"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleEditItem({
-                            id: 'notice-1',
-                            title: '새로운 강의 출시 안내',
-                            content: '다음 주에 새로운 React 강의가 출시됩니다. 많은 관심 부탁드립니다.',
-                            author: '관리자',
-                            status: 'published',
-                            priority: 'high',
-                            views: 1250,
-                            created_at: '2024-01-15T10:00:00Z',
-                            updated_at: '2024-01-15T10:00:00Z'
-                          })}
-                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
-                          title="수정"
+                        <button
+                          onClick={() => handleEditItem(item)}
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDeleteItem({
-                            id: 'notice-1',
-                            title: '새로운 강의 출시 안내',
-                            content: '다음 주에 새로운 React 강의가 출시됩니다. 많은 관심 부탁드립니다.',
-                            author: '관리자',
-                            status: 'published',
-                            priority: 'high',
-                            views: 1250,
-                            created_at: '2024-01-15T10:00:00Z',
-                            updated_at: '2024-01-15T10:00:00Z'
-                          })}
-                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                          title="삭제"
+                        <button
+                          onClick={() => handleDeleteItem(item)}
+                          className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">시스템 점검 안내</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">관리자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        보통
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">890</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 14일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">강의 할인 이벤트</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">관리자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        초안
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        높음
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">0</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 13일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </>
-              )}
-
-              {/* 커뮤니티 데이터 */}
-              {activeTab === 'community' && (
-                <>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">React 학습 후기</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">김학생</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">후기</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">120</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 15일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">Next.js 질문있습니다</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">이개발자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">질문</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">85</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 14일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">부적절한 내용</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">스팸유저</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        거부됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">기타</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 13일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </>
-              )}
-
-              {/* 리뷰 데이터 */}
-              {activeTab === 'reviews' && (
-                <>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">AI 사진작가로 월300 버는 무료강의</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">김학생</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="ml-1">5.0</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">23</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 15일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">초보자도 추가 월급 벌기 무료강의</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">이개발자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="ml-1">4.0</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 14일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">AI쿠팡로켓 수익화 무료강의</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">박마케터</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        대기중
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="ml-1">2.0</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 13일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </>
-              )}
-
-              {/* 성공 스토리 데이터 */}
-              {activeTab === 'success-stories' && (
-                <>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">React로 취업 성공!</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">정개발자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Award className="w-4 h-4 text-yellow-500" />
-                        <span className="ml-1">추천</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">450</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 15일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">프리랜서로 전환</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">최프리랜서</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        발행됨
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">320</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 14일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">스킬 업그레이드</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">한학습자</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        대기중
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">0</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024년 1월 13일</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </>
+                ))
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              이전
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              다음
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                <span className="font-medium">{startIndex + 1}</span> - <span className="font-medium">{Math.min(endIndex, totalItems)}</span> / <span className="font-medium">{totalItems}</span> 개
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  이전
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNumber = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
+                  if (pageNumber > totalPages) return null
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        pageNumber === currentPage
+                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  )
+                })}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  다음
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 상세보기 모달 */}
       {showDetailModal && selectedItem && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">콘텐츠 상세 정보</h3>
-                <button
-                  onClick={handleCloseDetailModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">상세 정보</h3>
+              <button
+                onClick={handleCloseDetailModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">제목</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.title}</p>
               </div>
-              <div className="space-y-4 text-sm text-gray-700">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p><strong>제목:</strong> {selectedItem.title}</p>
-                    <p><strong>작성자:</strong> {selectedItem.author}</p>
-                    <p><strong>상태:</strong> <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(selectedItem.status)}`}>
-                      {getStatusText(selectedItem.status)}
-                    </span></p>
-                  </div>
-                  <div>
-                    <p><strong>조회수:</strong> {selectedItem.views?.toLocaleString() || 0}</p>
-                    <p><strong>작성일:</strong> {formatDate(selectedItem.created_at)}</p>
-                    <p><strong>수정일:</strong> {formatDate(selectedItem.updated_at)}</p>
-                  </div>
-                </div>
-                <div>
-                  <p><strong>내용:</strong></p>
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                    <p className="text-gray-800">{selectedItem.content}</p>
-                  </div>
-                </div>
-                {selectedItem.priority && (
-                  <div>
-                    <p><strong>우선순위:</strong> <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(selectedItem.priority)}`}>
-                      {getPriorityText(selectedItem.priority)}
-                    </span></p>
-                  </div>
-                )}
-                {selectedItem.category && (
-                  <div>
-                    <p><strong>카테고리:</strong> {selectedItem.category}</p>
-                  </div>
-                )}
-                {selectedItem.rating && (
-                  <div>
-                    <p><strong>평점:</strong> 
-                      <div className="flex items-center mt-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="ml-1">{selectedItem.rating}</span>
-                      </div>
-                    </p>
-                  </div>
-                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">내용</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.content}</p>
               </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={handleCloseDetailModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                >
-                  닫기
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">작성자</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.author}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">상태</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedItem.status}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">생성일</label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {new Date(selectedItem.createdAt || selectedItem.created_at).toLocaleDateString()}
+                </p>
               </div>
             </div>
           </div>
@@ -939,146 +731,115 @@ export default function ContentPage() {
       )}
 
       {/* 수정 모달 */}
-      {showEditModal && editingItem && (
+      {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">콘텐츠 수정</h3>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">콘텐츠 수정</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">제목</label>
+                <input
+                  type="text"
+                  value={editForm.title || ''}
+                  onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
-              <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">내용</label>
+                <textarea
+                  value={editForm.content || ''}
+                  onChange={(e) => setEditForm({...editForm, content: e.target.value})}
+                  rows={4}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              {activeTab === 'community' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">제목</label>
+                  <label className="block text-sm font-medium text-gray-700">카테고리</label>
+                  <select
+                    value={editForm.category || '정보공유'}
+                    onChange={(e) => setEditForm({...editForm, category: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="정보공유">정보공유</option>
+                    <option value="질문답변">질문답변</option>
+                    <option value="자유게시판">자유게시판</option>
+                    <option value="공지사항">공지사항</option>
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">상태</label>
+                <select
+                  value={editForm.status || 'draft'}
+                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="published">발행됨</option>
+                  <option value="draft">초안</option>
+                  <option value="pending">대기중</option>
+                  <option value="rejected">거부됨</option>
+                  <option value="archived">보관됨</option>
+                </select>
+              </div>
+              {activeTab === 'community' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">태그 (쉼표로 구분)</label>
                   <input
                     type="text"
-                    value={editForm.title || ''}
-                    onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={editForm.tags || ''}
+                    onChange={(e) => setEditForm({...editForm, tags: e.target.value})}
+                    placeholder="태그1, 태그2, 태그3"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+              )}
+              {activeTab === 'notices' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">내용</label>
-                  <textarea
-                    value={editForm.content || ''}
-                    onChange={(e) => setEditForm({...editForm, content: e.target.value})}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700">우선순위</label>
+                  <select
+                    value={editForm.priority || 'medium'}
+                    onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="low">낮음</option>
+                    <option value="medium">보통</option>
+                    <option value="high">높음</option>
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
-                    <select
-                      value={editForm.status || 'draft'}
-                      onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="draft">초안</option>
-                      <option value="published">발행됨</option>
-                      <option value="pending">대기중</option>
-                      <option value="rejected">거부됨</option>
-                      <option value="archived">보관됨</option>
-                    </select>
-                  </div>
-                  {activeTab === 'notices' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">우선순위</label>
-                      <select
-                        value={editForm.priority || 'medium'}
-                        onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="low">낮음</option>
-                        <option value="medium">보통</option>
-                        <option value="high">높음</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-                {activeTab === 'success-stories' && (
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      checked={editForm.featured || false}
-                      onChange={(e) => setEditForm({...editForm, featured: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-                      추천 스토리
-                    </label>
-                  </div>
-                )}
+              )}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={editForm.featured || false}
+                  onChange={(e) => setEditForm({...editForm, featured: e.target.checked})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label className="ml-2 block text-sm text-gray-900">추천 콘텐츠</label>
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
+                  type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   취소
                 </button>
                 <button
+                  type="button"
                   onClick={handleSaveEdit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 flex items-center"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  <Save className="w-4 h-4 mr-2" />
                   저장
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 삭제 확인 모달 */}
-      {showDeleteModal && editingItem && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">콘텐츠 삭제</h3>
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="mb-4">
-                <div className="flex items-center mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-500 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">정말로 삭제하시겠습니까?</p>
-                    <p className="text-sm text-gray-600">
-                      <strong>{editingItem.title}</strong> 콘텐츠가 영구적으로 삭제됩니다.
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                  <p className="text-sm text-red-800">
-                    ⚠️ 이 작업은 되돌릴 수 없습니다. 콘텐츠와 관련된 모든 데이터가 삭제됩니다.
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 flex items-center"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  삭제
                 </button>
               </div>
             </div>

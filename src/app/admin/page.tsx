@@ -19,7 +19,8 @@ import {
   DollarSign,
   Star,
   AlertCircle,
-  Home
+  Home,
+  MessageSquare
 } from 'lucide-react'
 
 interface AdminStats {
@@ -28,6 +29,8 @@ interface AdminStats {
     recentUsers: number
     totalCourses: number
     recentCourses: number
+    totalCommunityPosts: number
+    recentCommunityPosts: number
     totalPurchases: number
     recentPurchases: number
     totalRevenue: number
@@ -266,7 +269,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -289,6 +292,19 @@ export default function AdminDashboard() {
               <p className="text-sm font-medium text-gray-600">총 강의</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.overview?.totalCourses || 0}</p>
               <p className="text-sm text-green-600">+{stats?.overview?.recentCourses || 0} 이번 주</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <MessageSquare className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">커뮤니티 게시글</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.overview?.totalCommunityPosts || 0}</p>
+              <p className="text-sm text-green-600">+{stats?.overview?.recentCommunityPosts || 0} 이번 주</p>
             </div>
           </div>
         </div>
