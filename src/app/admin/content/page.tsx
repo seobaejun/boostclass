@@ -97,10 +97,23 @@ export default function ContentPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [editForm, setEditForm] = useState<any>({})
+  const [createForm, setCreateForm] = useState<any>({
+    title: '',
+    content: '',
+    priority: 'normal',
+    status: 'published'
+  })
   const [items, setItems] = useState<any[]>([])
   const [totalItems, setTotalItems] = useState(0)
+  const [tabCounts, setTabCounts] = useState({
+    notices: 0,
+    community: 0,
+    reviews: 0,
+    'success-stories': 0
+  })
 
   const itemsPerPage = 10
 
@@ -110,7 +123,22 @@ export default function ContentPage() {
 
   useEffect(() => {
     fetchContent()
+    fetchAllTabCounts() // 모든 탭의 개수 가져오기
   }, [activeTab, currentPage, searchTerm, statusFilter, selectedCategory, selectedStatus])
+
+  // 모달이 열릴 때 첫 번째 입력 필드에 포커스
+  useEffect(() => {
+    if (showCreateModal) {
+      // 약간의 지연을 두어 모달이 완전히 렌더링된 후 포커스
+      const timer = setTimeout(() => {
+        const titleInput = document.querySelector('input[tabindex="1"]') as HTMLInputElement
+        if (titleInput) {
+          titleInput.focus()
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [showCreateModal])
 
   // 핸들러 함수들
   const handleItemClick = (item: any) => {
@@ -164,6 +192,7 @@ export default function ContentPage() {
         setEditForm({})
         // 데이터 새로고침
         fetchContent()
+        fetchAllTabCounts() // 탭 개수 새로고침
       } else {
         console.error('❌ 콘텐츠 수정 실패:', data.error)
         alert(data.error || '콘텐츠 수정에 실패했습니다.')
@@ -206,6 +235,7 @@ export default function ContentPage() {
         setEditingItem(null)
         // 데이터 새로고침
         fetchContent()
+        fetchAllTabCounts() // 탭 개수 새로고침
       } else {
         console.error('❌ 콘텐츠 삭제 실패:', data.error)
         alert(data.error || '콘텐츠 삭제에 실패했습니다.')
@@ -213,6 +243,163 @@ export default function ContentPage() {
     } catch (error) {
       console.error('❌ 콘텐츠 삭제 오류:', error)
       alert('콘텐츠 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleCreateContent = () => {
+    setCreateForm({
+      title: '',
+      content: '',
+      priority: 'normal',
+      status: 'published'
+    })
+    setShowCreateModal(true)
+  }
+
+  // 테스트 API 호출 함수
+  const testAPI = async () => {
+    console.log('🧪 테스트 API 호출 시작...')
+    
+    try {
+      const response = await fetch('/api/test-notices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          test: true,
+          title: '테스트 제목',
+          content: '테스트 내용'
+        })
+      })
+      
+      console.log('🧪 테스트 응답 상태:', response.status)
+      const data = await response.json()
+      console.log('🧪 테스트 응답 데이터:', data)
+      
+      alert(`테스트 API 결과:\n상태: ${response.status}\n메시지: ${data.message}`)
+    } catch (error) {
+      console.error('🧪 테스트 API 오류:', error)
+      alert(`테스트 API 오류: ${error.message}`)
+    }
+  }
+
+  const handleSaveCreate = async () => {
+    try {
+      console.log('새 콘텐츠 작성:', createForm)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert('로그인이 필요합니다.')
+        return
+      }
+
+    console.log('📤 API 요청 시작:', `/api/admin/content/${activeTab}`)
+    console.log('📤 요청 데이터:', createForm)
+    
+    const response = await fetch(`/api/admin/content/${activeTab}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(createForm)
+    })
+
+    console.log('📥 응답 상태:', response.status, response.statusText)
+    console.log('📥 응답 헤더:', Object.fromEntries(response.headers.entries()))
+    console.log('📥 응답 URL:', response.url)
+    console.log('📥 응답 타입:', response.type)
+    console.log('📥 응답 리다이렉트됨:', response.redirected)
+
+    let data
+    try {
+      data = await response.json()
+      console.log('📥 응답 JSON 파싱 성공:', data)
+    } catch (jsonError) {
+      console.error('❌ JSON 파싱 실패:', jsonError)
+      let responseText = ''
+      try {
+        responseText = await response.text()
+      } catch (textError) {
+        responseText = '텍스트 읽기 실패: ' + textError.message
+      }
+      console.error('❌ 응답 텍스트:', responseText)
+      console.error('❌ 응답 상태 재확인:', response.status, response.statusText)
+      alert(`API 응답 파싱 실패: ${jsonError.message}\n응답 상태: ${response.status}\n응답 텍스트: ${responseText}`)
+      return
+    }
+
+    if (response.ok && data.success) {
+        console.log('✅ 콘텐츠 작성 성공')
+        alert('콘텐츠가 성공적으로 작성되었습니다.')
+        setShowCreateModal(false)
+        setCreateForm({
+          title: '',
+          content: '',
+          priority: 'normal',
+          status: 'published'
+        })
+        fetchContent() // 데이터 새로고침
+        fetchAllTabCounts() // 탭 개수 새로고침
+      } else {
+        console.error('❌ 콘텐츠 작성 실패:', data.error)
+        console.log('📋 전체 API 응답:', data)
+        console.log('🔍 tableCreationRequired:', data.tableCreationRequired)
+        
+        if (data.tableCreationRequired) {
+          // 더 자세한 테이블 생성 안내
+          const sqlScript = data.sqlScript || `-- notices 테이블 생성
+CREATE TABLE IF NOT EXISTS notices (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  priority TEXT DEFAULT 'normal' NOT NULL CHECK (priority IN ('normal', 'important')),
+  author_name TEXT NOT NULL,
+  author_email TEXT NOT NULL,
+  author_id UUID,
+  status TEXT DEFAULT 'published' NOT NULL CHECK (status IN ('published', 'draft', 'archived')),
+  views INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 인덱스 생성
+CREATE INDEX IF NOT EXISTS idx_notices_priority ON notices(priority);
+CREATE INDEX IF NOT EXISTS idx_notices_status ON notices(status);
+CREATE INDEX IF NOT EXISTS idx_notices_created_at ON notices(created_at DESC);
+
+-- RLS 비활성화 (테스트용)
+ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
+          
+          console.log('📋 SQL 스크립트:', sqlScript)
+          
+          alert(`❌ notices 테이블이 존재하지 않습니다!
+
+🔧 해결 방법:
+
+1️⃣ Supabase 대시보드 접속
+   - https://supabase.com/dashboard
+   - 프로젝트 선택
+
+2️⃣ SQL Editor 열기
+   - 왼쪽 메뉴에서 "SQL Editor" 클릭
+
+3️⃣ 다음 SQL 코드 실행:
+   - 새 쿼리 생성
+   - 아래 SQL 코드 복사/붙여넣기
+   - "Run" 버튼 클릭
+
+4️⃣ 다시 공지사항 작성 시도
+
+💡 SQL 코드가 콘솔에 출력되었습니다. F12를 눌러 개발자 도구에서 확인하세요.`)
+        } else {
+          alert(`❌ 공지사항 작성 실패\n\n오류: ${data.error || '알 수 없는 오류가 발생했습니다.'}\n\n다시 시도해주세요.`)
+        }
+      }
+    } catch (error) {
+      console.error('❌ 콘텐츠 작성 오류:', error)
+      alert('콘텐츠 작성 중 오류가 발생했습니다.')
     }
   }
 
@@ -277,6 +464,48 @@ export default function ContentPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR')
+  }
+
+  // 모든 탭의 개수를 가져오는 함수
+  const fetchAllTabCounts = async () => {
+    try {
+      if (!user) return
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const tabTypes: ContentType[] = ['notices', 'community', 'reviews', 'success-stories']
+      const counts = { ...tabCounts }
+
+      // 각 탭의 개수를 병렬로 가져오기
+      await Promise.all(
+        tabTypes.map(async (tabType) => {
+          try {
+            const response = await fetch(`/api/admin/content/${tabType}?limit=1&page=1&status=all`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success) {
+                counts[tabType] = data.total || 0
+              }
+            }
+          } catch (error) {
+            console.warn(`탭 ${tabType} 개수 조회 실패:`, error)
+            counts[tabType] = 0
+          }
+        })
+      )
+
+      setTabCounts(counts)
+    } catch (error) {
+      console.warn('탭 개수 조회 중 오류:', error)
+    }
   }
 
   const fetchContent = async () => {
@@ -358,10 +587,10 @@ export default function ContentPage() {
   }
 
   const tabs = [
-    { id: 'notices', label: '공지사항', icon: FileText, count: activeTab === 'notices' ? totalItems : 0 },
-    { id: 'community', label: '커뮤니티', icon: MessageSquare, count: activeTab === 'community' ? totalItems : 0 },
-    { id: 'reviews', label: '리뷰', icon: Star, count: activeTab === 'reviews' ? totalItems : 0 },
-    { id: 'success-stories', label: '성공 스토리', icon: Award, count: activeTab === 'success-stories' ? totalItems : 0 }
+    { id: 'notices', label: '공지사항', icon: FileText, count: tabCounts.notices },
+    { id: 'community', label: '커뮤니티', icon: MessageSquare, count: tabCounts.community },
+    { id: 'reviews', label: '리뷰', icon: Star, count: tabCounts.reviews },
+    { id: 'success-stories', label: '성공 스토리', icon: Award, count: tabCounts['success-stories'] }
   ]
 
   if (loading) {
@@ -397,26 +626,22 @@ export default function ContentPage() {
         </div>
         <div className="flex space-x-3">
           {activeTab === 'notices' && (
-            <button
-              onClick={() => {
-                const newItem = {
-                  id: `new-${activeTab}-${Date.now()}`,
-                  title: '새 공지사항',
-                  content: '새로운 공지사항입니다.',
-                  author: '관리자',
-                  status: 'draft',
-                  priority: 'medium',
-                  views: 0,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-                handleEditItem(newItem)
-              }}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              새 공지사항 작성
-            </button>
+            <>
+              <button
+                onClick={handleCreateContent}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                새 공지사항 작성
+              </button>
+              
+              <button
+                onClick={testAPI}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                🧪 API 테스트
+              </button>
+            </>
           )}
           <button
             onClick={() => {
@@ -424,6 +649,7 @@ export default function ContentPage() {
               setSearchTerm('')
               setStatusFilter('all')
               fetchContent()
+              fetchAllTabCounts() // 탭 개수 새로고침
             }}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -570,8 +796,14 @@ export default function ContentPage() {
                       </span>
                     </td>
                     {activeTab === 'notices' && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.priority || '보통'}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          item.priority === 'important' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {item.priority === 'important' ? '중요공지' : '일반공지'}
+                        </span>
                       </td>
                     )}
                     {activeTab === 'community' && (
@@ -807,13 +1039,12 @@ export default function ContentPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">우선순위</label>
                   <select
-                    value={editForm.priority || 'medium'}
+                    value={editForm.priority || 'normal'}
                     onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="low">낮음</option>
-                    <option value="medium">보통</option>
-                    <option value="high">높음</option>
+                    <option value="normal">일반공지</option>
+                    <option value="important">중요공지</option>
                   </select>
                 </div>
               )}
@@ -841,6 +1072,113 @@ export default function ContentPage() {
                 >
                   저장
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 콘텐츠 작성 모달 */}
+      {showCreateModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
+          onClick={(e) => {
+            // 배경 클릭 시 모달 닫기
+            if (e.target === e.currentTarget) {
+              setShowCreateModal(false)
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[10000]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  새 {activeTab === 'notices' ? '공지사항' : '콘텐츠'} 작성
+                </h3>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                  <input
+                    type="text"
+                    value={createForm.title || ''}
+                    onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    placeholder="제목을 입력하세요"
+                    autoFocus
+                    tabIndex={1}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
+                  <textarea
+                    value={createForm.content || ''}
+                    onChange={(e) => setCreateForm({...createForm, content: e.target.value})}
+                    rows={8}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-vertical"
+                    placeholder="내용을 입력하세요"
+                    tabIndex={2}
+                  />
+                </div>
+                
+                {activeTab === 'notices' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">우선순위</label>
+                    <select
+                      value={createForm.priority || 'normal'}
+                      onChange={(e) => setCreateForm({...createForm, priority: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      tabIndex={3}
+                    >
+                      <option value="normal">일반공지</option>
+                      <option value="important">중요공지</option>
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                  <select
+                    value={createForm.status || 'published'}
+                    onChange={(e) => setCreateForm({...createForm, status: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    tabIndex={4}
+                  >
+                    <option value="published">발행됨</option>
+                    <option value="draft">초안</option>
+                    <option value="archived">보관됨</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    tabIndex={6}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveCreate}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    tabIndex={5}
+                  >
+                    작성 완료
+                  </button>
+                </div>
               </div>
             </div>
           </div>

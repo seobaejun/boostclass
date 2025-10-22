@@ -1,107 +1,91 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
 import { Calendar, Eye, Pin, Search, Filter } from 'lucide-react'
 
-const notices = [
-  {
-    id: 1,
-    title: '[중요] 2024년 12월 무료강의 일정 안내',
-    content: '12월 한 달간 진행되는 무료강의 일정을 안내드립니다. 많은 참여 부탁드립니다.',
-    date: '2024-12-01',
-    views: 1234,
-    isPinned: true,
-    category: '공지사항'
-  },
-  {
-    id: 2,
-    title: '잘파는클래스 앱 출시 예정 안내',
-    content: '더욱 편리한 학습을 위한 모바일 앱이 곧 출시됩니다.',
-    date: '2024-11-28',
-    views: 856,
-    isPinned: true,
-    category: '업데이트'
-  },
-  {
-    id: 3,
-    title: '2024년 연말 특별 할인 이벤트',
-    content: '연말을 맞아 모든 유료강의 30% 할인 이벤트를 진행합니다.',
-    date: '2024-11-25',
-    views: 2341,
-    isPinned: false,
-    category: '이벤트'
-  },
-  {
-    id: 4,
-    title: '새로운 강사진 합류 안내',
-    content: '실무 전문가 5명이 새롭게 잘파는클래스에 합류했습니다.',
-    date: '2024-11-20',
-    views: 567,
-    isPinned: false,
-    category: '공지사항'
-  },
-  {
-    id: 5,
-    title: '[점검] 서버 정기 점검 안내',
-    content: '서비스 품질 향상을 위한 정기 점검이 진행됩니다.',
-    date: '2024-11-15',
-    views: 423,
-    isPinned: false,
-    category: '점검'
-  },
-  {
-    id: 6,
-    title: '수강생 성과 인증 이벤트',
-    content: '여러분의 학습 성과를 인증하고 상금을 받아가세요!',
-    date: '2024-11-10',
-    views: 1876,
-    isPinned: false,
-    category: '이벤트'
-  },
-  {
-    id: 7,
-    title: '고객센터 운영시간 변경 안내',
-    content: '더 나은 서비스 제공을 위해 고객센터 운영시간이 변경됩니다.',
-    date: '2024-11-05',
-    views: 234,
-    isPinned: false,
-    category: '공지사항'
-  },
-  {
-    id: 8,
-    title: '잘파는클래스 1주년 기념 이벤트',
-    content: '잘파는클래스 1주년을 기념하여 다양한 이벤트를 준비했습니다.',
-    date: '2024-10-30',
-    views: 3456,
-    isPinned: false,
-    category: '이벤트'
-  },
-  {
-    id: 9,
-    title: '새로운 결제 시스템 도입 안내',
-    content: '더욱 안전하고 편리한 결제를 위한 새로운 시스템이 도입됩니다.',
-    date: '2024-10-25',
-    views: 789,
-    isPinned: false,
-    category: '업데이트'
-  },
-  {
-    id: 10,
-    title: '강의 품질 개선을 위한 피드백 요청',
-    content: '더 나은 강의 제작을 위해 여러분의 소중한 의견을 들려주세요.',
-    date: '2024-10-20',
-    views: 1123,
-    isPinned: false,
-    category: '공지사항'
-  }
-]
+interface Notice {
+  id: string
+  title: string
+  content: string
+  priority: 'normal' | 'important'
+  author_name: string
+  author_email: string
+  status: 'published' | 'draft' | 'archived'
+  views: number
+  created_at: string
+  updated_at: string
+}
+
+// 더미 데이터 제거하고 실제 API에서 데이터 가져오기
 
 export default function NoticesPage() {
+  const [notices, setNotices] = useState<Notice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
+
+  // 공지사항 데이터 가져오기
+  useEffect(() => {
+    fetchNotices()
+  }, [])
+
+  // 검색어나 카테고리 변경 시 데이터 다시 가져오기
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchNotices()
+    }, 300) // 300ms 디바운스
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, selectedCategory])
+
+  const fetchNotices = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // 검색 파라미터 구성
+      const params = new URLSearchParams()
+      if (searchTerm) params.append('search', searchTerm)
+      if (selectedCategory) params.append('priority', selectedCategory)
+      params.append('page', '1')
+      params.append('limit', '50') // 충분한 수의 공지사항을 가져옴
+      
+      const response = await fetch(`/api/notices?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // API에서 이미 발행된 공지사항만 반환하므로 추가 필터링 불필요
+        setNotices(data.items || [])
+      } else {
+        // 테이블이 없는 경우 특별 처리
+        if (data.tableNotFound) {
+          setError('공지사항 시스템이 아직 설정되지 않았습니다.')
+        } else {
+          setError(data.error || '공지사항을 불러오는데 실패했습니다.')
+        }
+      }
+    } catch (error: any) {
+      console.error('공지사항 조회 오류:', error)
+      setError('공지사항을 불러오는데 실패했습니다.')
+      setNotices([]) // 오류 시 빈 배열로 설정
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -111,31 +95,43 @@ export default function NoticesPage() {
     })
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case '공지사항':
-        return 'bg-blue-100 text-blue-800'
-      case '이벤트':
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'important':
         return 'bg-red-100 text-red-800'
-      case '업데이트':
-        return 'bg-green-100 text-green-800'
-      case '점검':
-        return 'bg-yellow-100 text-yellow-800'
+      case 'normal':
+        return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
   }
 
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'important':
+        return '중요공지'
+      case 'normal':
+        return '일반공지'
+      default:
+        return '공지'
+    }
+  }
+
   const filteredNotices = notices.filter(notice => {
     const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notice.content.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || notice.category === selectedCategory
+                         notice.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         notice.author_name.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // 카테고리 필터링은 우선순위 기반으로 변경
+    const matchesCategory = !selectedCategory || 
+                           (selectedCategory === 'important' && notice.priority === 'important') ||
+                           (selectedCategory === 'normal' && notice.priority === 'normal')
     
     return matchesSearch && matchesCategory
   })
 
-  const pinnedNotices = filteredNotices.filter(notice => notice.isPinned)
-  const regularNotices = filteredNotices.filter(notice => !notice.isPinned)
+  const pinnedNotices = filteredNotices.filter(notice => notice.priority === 'important')
+  const regularNotices = filteredNotices.filter(notice => notice.priority === 'normal')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -165,18 +161,18 @@ export default function NoticesPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                disabled={loading}
               />
             </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              disabled={loading}
             >
-              <option value="">모든 카테고리</option>
-              <option value="공지사항">공지사항</option>
-              <option value="이벤트">이벤트</option>
-              <option value="업데이트">업데이트</option>
-              <option value="점검">점검</option>
+              <option value="">모든 우선순위</option>
+              <option value="important">중요공지</option>
+              <option value="normal">일반공지</option>
             </select>
             <button
               onClick={() => {
@@ -195,8 +191,45 @@ export default function NoticesPage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Pinned Notices */}
-          {pinnedNotices.length > 0 && (
+          {/* 로딩 상태 */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-4 text-gray-600">공지사항을 불러오는 중...</p>
+            </div>
+          )}
+
+          {/* 오류 상태 */}
+          {error && !loading && (
+            <div className="text-center py-12">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+                <p className="text-red-600 font-medium">오류가 발생했습니다</p>
+                <p className="text-red-500 text-sm mt-2">{error}</p>
+                <button
+                  onClick={fetchNotices}
+                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 데이터 없음 상태 */}
+          {!loading && !error && notices.length === 0 && (
+            <div className="text-center py-12">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
+                <p className="text-gray-600 font-medium">등록된 공지사항이 없습니다</p>
+                <p className="text-gray-500 text-sm mt-2">새로운 공지사항이 등록되면 여기에 표시됩니다.</p>
+              </div>
+            </div>
+          )}
+
+          {/* 공지사항 목록 */}
+          {!loading && !error && notices.length > 0 && (
+            <>
+              {/* Pinned Notices */}
+              {pinnedNotices.length > 0 && (
             <div className="mb-12">
               <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
                 <Pin className="w-5 h-5 mr-2 text-red-500" />
@@ -208,8 +241,8 @@ export default function NoticesPage() {
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryColor(notice.category)}`}>
-                            {notice.category}
+                          <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityColor(notice.priority)}`}>
+                            {getPriorityLabel(notice.priority)}
                           </span>
                           <Pin className="w-4 h-4 text-red-500" />
                         </div>
@@ -219,9 +252,11 @@ export default function NoticesPage() {
                         </div>
                       </div>
                       
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer">
-                        {notice.title}
-                      </h3>
+                      <Link href={`/notices/${notice.id}`}>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer transition-colors">
+                          {notice.title}
+                        </h3>
+                      </Link>
                       
                       <p className="text-gray-600 mb-4">
                         {notice.content}
@@ -229,7 +264,7 @@ export default function NoticesPage() {
                       
                       <div className="flex items-center text-sm text-gray-500">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {formatDate(notice.date)}
+                        {formatDate(notice.created_at)}
                       </div>
                     </div>
                   </div>
@@ -248,8 +283,8 @@ export default function NoticesPage() {
                 <div key={notice.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${getCategoryColor(notice.category)}`}>
-                        {notice.category}
+                      <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityColor(notice.priority)}`}>
+                        {getPriorityLabel(notice.priority)}
                       </span>
                       <div className="flex items-center text-sm text-gray-500">
                         <Eye className="w-4 h-4 mr-1" />
@@ -257,9 +292,11 @@ export default function NoticesPage() {
                       </div>
                     </div>
                     
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer">
-                      {notice.title}
-                    </h3>
+                    <Link href={`/notices/${notice.id}`}>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 cursor-pointer transition-colors">
+                        {notice.title}
+                      </h3>
+                    </Link>
                     
                     <p className="text-gray-600 mb-4">
                       {notice.content}
@@ -267,15 +304,18 @@ export default function NoticesPage() {
                     
                     <div className="flex items-center text-sm text-gray-500">
                       <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(notice.date)}
+                      {formatDate(notice.created_at)}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+            </>
+          )}
 
-          {/* Pagination */}
+          {/* Pagination - 실제 데이터가 있을 때만 표시 */}
+          {!loading && !error && notices.length > 0 && (
           <div className="mt-12 flex justify-center">
             <nav className="flex space-x-2">
               <button className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700">
@@ -298,6 +338,7 @@ export default function NoticesPage() {
               </button>
             </nav>
           </div>
+          )}
         </div>
       </section>
 

@@ -91,6 +91,46 @@ export async function PUT(
         }
         break
 
+      case 'notices':
+        console.log('📢 공지사항 수정 시작')
+        
+        const noticeUpdateData: any = {
+          updated_at: new Date().toISOString()
+        }
+
+        // 수정 가능한 필드들
+        if (body.title) noticeUpdateData.title = body.title
+        if (body.content) noticeUpdateData.content = body.content
+        if (body.priority) noticeUpdateData.priority = body.priority
+        if (body.status) noticeUpdateData.status = body.status
+
+        const { data: updatedNotice, error: noticeUpdateError } = await supabase
+          .from('notices')
+          .update(noticeUpdateData)
+          .eq('id', id)
+          .select()
+          .single()
+
+        if (noticeUpdateError) {
+          console.error('❌ 공지사항 수정 실패:', noticeUpdateError)
+          throw noticeUpdateError
+        }
+
+        result = {
+          id: updatedNotice.id,
+          title: updatedNotice.title,
+          content: updatedNotice.content?.substring(0, 100) + '...',
+          priority: updatedNotice.priority,
+          author: updatedNotice.author_name,
+          author_email: updatedNotice.author_email,
+          status: updatedNotice.status,
+          views: updatedNotice.views || 0,
+          createdAt: updatedNotice.created_at,
+          updatedAt: updatedNotice.updated_at,
+          type: 'notices'
+        }
+        break
+
       case 'courses':
         console.log('📚 강의 수정 시작')
         // 강의 수정 로직 (필요시 구현)
@@ -167,6 +207,20 @@ export async function DELETE(
         if (deleteError) {
           console.error('❌ 커뮤니티 게시글 삭제 실패:', deleteError)
           throw deleteError
+        }
+        break
+
+      case 'notices':
+        console.log('📢 공지사항 삭제 시작')
+        
+        const { error: noticeDeleteError } = await supabase
+          .from('notices')
+          .delete()
+          .eq('id', id)
+
+        if (noticeDeleteError) {
+          console.error('❌ 공지사항 삭제 실패:', noticeDeleteError)
+          throw noticeDeleteError
         }
         break
 
