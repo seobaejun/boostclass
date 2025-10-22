@@ -58,11 +58,45 @@ export default function LessonPage() {
 
   const fetchLesson = async () => {
     try {
-      const response = await fetch(`/api/lessons/${lessonId}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setLessonData(data.data)
+      // 먼저 강의 정보를 가져옵니다
+      const courseResponse = await fetch(`/api/courses`)
+      const courseData = await courseResponse.json()
+      
+      if (courseData.success && courseData.data.courses) {
+        const foundCourse = courseData.data.courses.find((c: any) => c.id === courseId)
+        if (foundCourse) {
+          // 강의 정보를 기반으로 레슨 데이터를 생성합니다
+          const mockLessonData = {
+            lesson: {
+              id: lessonId,
+              title: foundCourse.title,
+              description: foundCourse.description,
+              videoUrl: foundCourse.video_url || foundCourse.vimeo_url || '',
+              duration: foundCourse.duration || 1800, // 기본 30분
+              order: 1,
+              course: {
+                id: courseId,
+                title: foundCourse.title,
+                category: {
+                  name: foundCourse.category || '무료강의'
+                },
+                lessons: [
+                  {
+                    id: lessonId,
+                    title: foundCourse.title,
+                    order: 1,
+                    duration: foundCourse.duration || 1800
+                  }
+                ]
+              }
+            },
+            progress: null
+          }
+          
+          setLessonData(mockLessonData)
+        } else {
+          router.push(`/courses/${courseId}`)
+        }
       } else {
         router.push(`/courses/${courseId}`)
       }
@@ -175,12 +209,30 @@ export default function LessonPage() {
           {/* Video Player */}
           <div className="relative">
             <div className="aspect-video">
-              <VideoPlayer
-                url={lessonData.lesson.videoUrl}
-                onProgress={handleProgress}
-                onEnded={handleVideoEnd}
-                initialTime={lessonData.progress?.watchTime || 0}
-              />
+              {lessonData.lesson.videoUrl ? (
+                // Vimeo 임베드 코드인지 확인
+                lessonData.lesson.videoUrl.includes('<iframe') || lessonData.lesson.videoUrl.includes('src=') ? (
+                  <div 
+                    className="w-full h-full"
+                    dangerouslySetInnerHTML={{ __html: lessonData.lesson.videoUrl }}
+                  />
+                ) : (
+                  <VideoPlayer
+                    url={lessonData.lesson.videoUrl}
+                    onProgress={handleProgress}
+                    onEnded={handleVideoEnd}
+                    initialTime={lessonData.progress?.watchTime || 0}
+                  />
+                )
+              ) : (
+                <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <div className="text-6xl mb-4">🎥</div>
+                    <h3 className="text-xl font-semibold mb-2">동영상 준비 중</h3>
+                    <p className="text-gray-300">강의 영상이 곧 업로드될 예정입니다.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Playlist Toggle Button */}
