@@ -186,12 +186,17 @@ export default function FreeCourseSection() {
                     className="px-3"
                     style={{ width: `${100 / 4}%` }}
                   >
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse h-[500px] flex flex-col">
                       <div className="h-48 bg-gray-300"></div>
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                        <div className="h-3 bg-gray-300 rounded mb-4"></div>
-                        <div className="h-6 bg-gray-300 rounded"></div>
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                          <div className="h-3 bg-gray-300 rounded mb-4"></div>
+                          <div className="h-6 bg-gray-300 rounded mb-4"></div>
+                          <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                          <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                        </div>
+                        <div className="h-8 bg-gray-300 rounded mt-auto"></div>
                       </div>
                     </div>
                   </div>
@@ -203,7 +208,7 @@ export default function FreeCourseSection() {
                     className="px-3"
                     style={{ width: `${100 / freeCourses.length}%` }}
                   >
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col border-2 border-blue-200 group">
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-[500px] flex flex-col border-2 border-blue-200 group">
                         {/* Course Image - 클릭 가능 */}
                         <Link href={`/courses/${course.id}`} className="block">
                           <div className="aspect-square relative overflow-hidden flex-shrink-0 cursor-pointer">
@@ -238,70 +243,72 @@ export default function FreeCourseSection() {
                         </Link>
 
                         {/* Course Info - 다른 카드와 동일한 구조 */}
-                        <div className="p-4 flex-1 flex flex-col">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
-                              {course.category?.name || '무료강의'}
-                            </span>
-                            <div className="flex items-center text-xs text-gray-500">
-                              <Star className="w-3 h-3 text-yellow-400 mr-1" />
-                              <span>4.8</span>
+                        <div className="p-4 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                                {course.category?.name || '무료강의'}
+                              </span>
+                              <div className="flex items-center text-xs text-gray-500">
+                                <Star className="w-3 h-3 text-yellow-400 mr-1" />
+                                <span>4.8</span>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* 제목과 설명 */}
-                          <div className="flex-1 mb-3">
-                            <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                              {course.title}
-                            </h3>
-                            
-                            <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                              {course.description}
-                            </p>
-                          </div>
+                            {/* 제목과 설명 */}
+                            <div className="mb-3">
+                              <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+                                {course.title}
+                              </h3>
+                              
+                              <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                                {course.description}
+                              </p>
+                            </div>
 
-                          {/* 가격 정보 */}
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex flex-col w-full">
-                              {course.original_price && course.original_price > 0 ? (
-                                <>
-                                  <div className="text-sm text-gray-500 line-through">
-                                    ₩{course.original_price.toLocaleString()}
-                                  </div>
+                            {/* 가격 정보 */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex flex-col w-full">
+                                {course.original_price && course.original_price > 0 ? (
+                                  <>
+                                    <div className="text-sm text-gray-500 line-through">
+                                      ₩{course.original_price.toLocaleString()}
+                                    </div>
+                                    <div className="text-xl font-bold text-blue-600">
+                                      무료
+                                    </div>
+                                  </>
+                                ) : (
                                   <div className="text-xl font-bold text-blue-600">
                                     무료
                                   </div>
-                                </>
-                              ) : (
-                                <div className="text-xl font-bold text-blue-600">
-                                  무료
-                                </div>
-                              )}
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Stats */}
+                            <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                              <div className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                <span>{course._count?.purchases || 0}명 수강</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{course.duration ? `${course.duration}분` : '시간 정보 없음'}</span>
+                              </div>
+                            </div>
+                            
+                            {/* 강의 레벨과 수강생 수 */}
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                {course.level === 'beginner' ? '초급' : course.level === 'intermediate' ? '중급' : '고급'}
+                              </span>
+                              <span>{course._count?.lessons || 0}개 강의</span>
                             </div>
                           </div>
 
-                          {/* Stats */}
-                          <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>{course._count?.purchases || 0}명 수강</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{course.duration ? `${course.duration}분` : '시간 정보 없음'}</span>
-                            </div>
-                          </div>
-                          
-                          {/* 강의 레벨과 수강생 수 */}
-                          <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                              {course.level === 'beginner' ? '초급' : course.level === 'intermediate' ? '중급' : '고급'}
-                            </span>
-                            <span>{course._count?.lessons || 0}개 강의</span>
-                          </div>
-
-                          {/* 무료 수강신청 버튼 */}
-                          <div className="mt-3">
+                          {/* 무료 수강신청 버튼 - 하단 고정 */}
+                          <div className="mt-auto">
                             <Link
                               href={`/courses/${course.id}`}
                               className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center text-sm"
