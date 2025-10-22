@@ -331,7 +331,11 @@ export default function MyCoursesPage() {
             >
               {courses.map((course) => (
               <div key={course.id} className="my-courses-card w-full" style={{ position: 'static', transform: 'none' }}>
-                <Link href={`/courses/${course.id}`} className="block group w-full" style={{ position: 'static', transform: 'none' }}>
+                <Link 
+                  href={course.type === 'purchase' ? `/courses/${course.id}/lessons/1` : `/courses/${course.id}`} 
+                  className="block group w-full" 
+                  style={{ position: 'static', transform: 'none' }}
+                >
                   <div 
                     className="my-courses-card bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col border-2 border-blue-200" 
                     style={{ position: 'static', transform: 'none', width: '100%' }}
@@ -397,6 +401,11 @@ export default function MyCoursesPage() {
                     <div className="flex-1 mb-3">
                       <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
                         {course.title}
+                        {course.type === 'purchase' && (
+                          <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            구매완료
+                          </span>
+                        )}
                       </h3>
                       
                       <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">

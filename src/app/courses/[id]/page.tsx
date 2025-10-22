@@ -574,21 +574,22 @@ export default function CourseDetailPage() {
                           </>
                         )}
                       </button>
-                    ) : (
-                      <button
-                        onClick={handlePurchase}
-                        disabled={purchasing}
-                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    ) : isPurchased ? (
+                      <Link
+                        href={`/courses/${courseId}/lessons/1`}
+                        className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center"
                       >
-                        {purchasing ? (
-                          '구매 중...'
-                        ) : (
-                          <>
-                            <ShoppingCart className="w-5 h-5 mr-2" />
-                            지금 구매하기
-                          </>
-                        )}
-                      </button>
+                        <Play className="w-5 h-5 mr-2" />
+                        강의 시청하기
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/payment?courseId=${courseId}`}
+                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center"
+                      >
+                        <ShoppingCart className="w-5 h-5 mr-2" />
+                        지금 구매하기
+                      </Link>
                     )
                   ) : (
                     <Link
