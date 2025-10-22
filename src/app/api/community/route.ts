@@ -8,8 +8,12 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    const search = searchParams.get('search')
+    const tag = searchParams.get('tag')
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
+
+    console.log('🔍 검색 파라미터:', { category, search, tag, limit, offset })
 
     let query = supabase
       .from('community_posts')
@@ -29,8 +33,20 @@ export async function GET(request: NextRequest) {
       .eq('status', 'published')
       .order('created_at', { ascending: false })
 
+    // 카테고리 필터
     if (category && category !== 'all') {
       query = query.eq('category', category)
+    }
+
+    // 검색어 필터 (제목, 내용, 작성자명에서 검색)
+    if (search && search.trim()) {
+      const searchTerm = search.trim()
+      query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%,author_name.ilike.%${searchTerm}%`)
+    }
+
+    // 태그 필터
+    if (tag && tag.trim()) {
+      query = query.contains('tags', [tag.trim()])
     }
 
     query = query.range(offset, offset + limit - 1)

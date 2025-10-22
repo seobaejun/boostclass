@@ -28,22 +28,43 @@ const formatTimeAgo = (dateString: string) => {
 export default function CommunityPage() {
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTag, setSelectedTag] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [posts, setPosts] = useState<any[]>([])
+  const [popularTags, setPopularTags] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // 실제 데이터 가져오기
   useEffect(() => {
     fetchPosts()
+    fetchPopularTags()
   }, [])
+
+  // 검색/필터 조건이 변경될 때마다 데이터 다시 가져오기
+  useEffect(() => {
+    fetchPosts()
+  }, [selectedCategory, searchTerm, selectedTag])
 
   const fetchPosts = async () => {
     try {
       setLoading(true)
       console.log('📚 커뮤니티 게시글 조회 시작...')
       
-      const response = await fetch('/api/community')
+      // URL 파라미터 구성
+      const params = new URLSearchParams()
+      if (selectedCategory !== '전체') {
+        params.append('category', selectedCategory)
+      }
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim())
+      }
+      if (selectedTag.trim()) {
+        params.append('tag', selectedTag.trim())
+      }
+      
+      const url = `/api/community${params.toString() ? '?' + params.toString() : ''}`
+      const response = await fetch(url)
       const data = await response.json()
 
       if (response.ok && data.success) {
@@ -54,11 +75,12 @@ export default function CommunityPage() {
           author: post.author_name,
           category: post.category,
           content: post.content,
-          commentCount: post.commentCount || 0, // 실제 댓글 수 사용
+          tags: post.tags || [],
+          commentCount: post.commentCount || 0,
           likes: post.likes || 0,
           views: post.views || 0,
           timeAgo: formatTimeAgo(post.created_at),
-          isHot: (post.likes || 0) > 10 || (post.views || 0) > 100
+          isHot: (post.likes || 0) > 5 || (post.views || 0) > 50
         }))
         setPosts(formattedPosts)
       } else {
@@ -70,6 +92,23 @@ export default function CommunityPage() {
       setError('게시글을 불러오는데 실패했습니다.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPopularTags = async () => {
+    try {
+      console.log('🏷️ 인기 태그 조회 시작...')
+      const response = await fetch('/api/community/popular-tags?limit=10')
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        console.log('✅ 인기 태그 조회 성공:', data.tags)
+        setPopularTags(data.tags)
+      } else {
+        console.error('❌ 인기 태그 조회 실패:', data.error)
+      }
+    } catch (error) {
+      console.error('❌ 인기 태그 조회 중 오류:', error)
     }
   }
 
@@ -115,34 +154,18 @@ export default function CommunityPage() {
     }
   }
 
-  // 카테고리별 게시글 수 계산 (useMemo로 최적화)
-  const categories = useMemo(() => {
-    const getCategoryCount = (categoryName: string) => {
-      if (categoryName === '전체') return posts.length
-      return posts.filter(post => post.category === categoryName).length
-    }
+  // 카테고리 목록 (서버 사이드 검색으로 변경되어 실제 개수는 표시하지 않음)
+  const categories = [
+    { name: '전체', active: selectedCategory === '전체' },
+    { name: '정보공유', active: selectedCategory === '정보공유' },
+    { name: '질문답변', active: selectedCategory === '질문답변' },
+    { name: '자유게시판', active: selectedCategory === '자유게시판' }
+  ]
 
-    return [
-      { name: '전체', count: getCategoryCount('전체'), active: true },
-      { name: '정보공유', count: getCategoryCount('정보공유'), active: false },
-      { name: '질문답변', count: getCategoryCount('질문답변'), active: false },
-      { name: '자유게시판', count: getCategoryCount('자유게시판'), active: false }
-    ]
-  }, [posts])
+  // 서버 사이드에서 이미 필터링된 데이터를 사용
+  const filteredPosts = posts
 
-  // 필터링된 게시글 (useMemo로 최적화)
-  const filteredPosts = useMemo(() => {
-    return posts.filter(post => {
-      const matchesCategory = selectedCategory === '전체' || post.category === selectedCategory
-      const matchesSearch = searchTerm === '' || 
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.author.toLowerCase().includes(searchTerm.toLowerCase())
-      return matchesCategory && matchesSearch
-    })
-  }, [posts, selectedCategory, searchTerm])
-
-  // 페이지네이션
+  // 페이지네이션 (클라이언트 사이드)
   const postsPerPage = 8
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage)
   const startIndex = (currentPage - 1) * postsPerPage
@@ -150,11 +173,26 @@ export default function CommunityPage() {
 
   const handleCategoryClick = (categoryName: string) => {
     setSelectedCategory(categoryName)
+    setSelectedTag('') // 카테고리 변경시 태그 필터 초기화
     setCurrentPage(1)
   }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPage(1)
+    // fetchPosts는 useEffect에서 자동 호출됨
+  }
+
+  const handleTagClick = (tag: string) => {
+    setSelectedTag(tag)
+    setSelectedCategory('전체') // 태그 선택시 카테고리를 전체로 변경
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setSelectedTag('')
+    setSelectedCategory('전체')
     setCurrentPage(1)
   }
 
@@ -208,6 +246,56 @@ export default function CommunityPage() {
               </form>
             </div>
 
+            {/* 필터 상태 */}
+            {(searchTerm || selectedTag || selectedCategory !== '전체') && (
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">활성 필터</h3>
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    모두 지우기
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategory !== '전체' && (
+                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                      카테고리: {selectedCategory}
+                      <button
+                        onClick={() => setSelectedCategory('전체')}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {searchTerm && (
+                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center">
+                      검색: {searchTerm}
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="ml-2 text-green-600 hover:text-green-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {selectedTag && (
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center">
+                      태그: {selectedTag}
+                      <button
+                        onClick={() => setSelectedTag('')}
+                        className="ml-2 text-purple-600 hover:text-purple-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* 카테고리 */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h3 className="text-lg font-semibold mb-4">카테고리</h3>
@@ -222,27 +310,34 @@ export default function CommunityPage() {
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
-                    <div className="flex justify-between items-center">
-                      <span>{category.name}</span>
-                      <span className="text-sm text-gray-500">{category.count}</span>
-                    </div>
+                    {category.name}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* 인기 태그 */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">인기 태그</h3>
-              <div className="flex flex-wrap gap-2">
-                {['#블로그수익화', '#구글애드센스', '#유튜브성장', '#쿠팡파트너스', '#AI부업', '#인스타마케팅'].map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm hover:bg-gray-200 cursor-pointer"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {popularTags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {popularTags.map((tagData, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleTagClick(tagData.tag)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        selectedTag === tagData.tag
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      #{tagData.tag} ({tagData.count})
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-sm">아직 태그가 없습니다.</div>
+              )}
             </div>
           </div>
 
@@ -253,9 +348,18 @@ export default function CommunityPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {selectedCategory === '전체' ? '최신 게시글' : `${selectedCategory} 게시글`}
+                    {searchTerm ? `"${searchTerm}" 검색 결과` :
+                     selectedTag ? `#${selectedTag} 태그 게시글` :
+                     selectedCategory === '전체' ? '최신 게시글' : `${selectedCategory} 게시글`}
                   </h2>
-                  <p className="text-gray-600">총 {filteredPosts.length}개의 게시글이 있습니다</p>
+                  <p className="text-gray-600">
+                    총 {filteredPosts.length}개의 게시글이 있습니다
+                    {(searchTerm || selectedTag || selectedCategory !== '전체') && (
+                      <span className="ml-2 text-blue-600">
+                        (필터링됨)
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <Link
                   href="/community/write"
@@ -324,9 +428,32 @@ export default function CommunityPage() {
                       {post.title}
                     </h3>
                     
-                    <p className="text-gray-600 mb-4 line-clamp-2 group-hover:text-gray-700 transition-colors">
+                    <p className="text-gray-600 mb-3 line-clamp-2 group-hover:text-gray-700 transition-colors">
                       {post.content}
                     </p>
+
+                    {/* 태그 표시 */}
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {post.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
+                          <button
+                            key={tagIndex}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleTagClick(tag)
+                            }}
+                            className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                        {post.tags.length > 3 && (
+                          <span className="text-xs text-gray-400 px-2 py-1">
+                            +{post.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
                       <div className="flex items-center space-x-4">
