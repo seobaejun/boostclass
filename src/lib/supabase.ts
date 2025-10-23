@@ -71,6 +71,42 @@ export function createClient() {
   })
 }
 
+// createSupabaseReqResClient 함수 (API 라우트에서 사용)
+export function createSupabaseReqResClient(request?: Request) {
+  // RLS 우회를 위해 서비스 키 우선 사용
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || finalKey
+  
+  // 서비스 키가 없는 경우 경고
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.')
+    console.warn('RLS 정책으로 인해 일부 작업이 실패할 수 있습니다.')
+    console.warn('Supabase 대시보드에서 서비스 키를 확인하고 환경 변수에 설정해주세요.')
+  }
+  
+  console.log('🔑 Request/Response용 Supabase 클라이언트 생성:', {
+    url: finalUrl,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    usingServiceKey: serviceKey !== finalKey,
+    keyPrefix: serviceKey.substring(0, 20) + '...',
+    isServiceRole: serviceKey.includes('service_role'),
+    canBypassRLS: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  })
+  
+  return createSupabaseClient(finalUrl, serviceKey, {
+    auth: {
+      autoRefreshToken: false, // API 라우트에서는 세션 관리 비활성화
+      persistSession: false,
+      detectSessionInUrl: false
+    },
+    global: {
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`
+      }
+    }
+  })
+}
+
 // 연결 테스트 함수
 export async function testSupabaseConnection() {
   try {

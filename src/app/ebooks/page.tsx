@@ -1,111 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
 import { Download, Star, Eye, Calendar, Search, Filter } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
-const ebooks = [
-  {
-    id: 1,
-    title: '블로그 수익화 완벽 가이드',
-    description: '월 300만원 블로그 수익의 모든 비밀을 담은 전자책',
-    author: '작은성공',
-    category: '블로그',
-    price: 'FREE',
-    originalPrice: 29000,
-    downloads: 15234,
-    rating: 4.9,
-    pages: 120,
-    publishDate: '2024.11.15',
-    thumbnail: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    tags: ['블로그', '수익화', '애드센스', '제휴마케팅']
-  },
-  {
-    id: 2,
-    title: 'AI 도구로 시작하는 부업 가이드',
-    description: 'ChatGPT, 미드저니 등 AI 도구를 활용한 새로운 수익 창출법',
-    author: '파파준스',
-    category: 'AI',
-    price: 'FREE',
-    originalPrice: 39000,
-    downloads: 12876,
-    rating: 4.8,
-    pages: 95,
-    publishDate: '2024.11.20',
-    thumbnail: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    tags: ['AI', '부업', 'ChatGPT', '자동화']
-  },
-  {
-    id: 3,
-    title: '유튜브 채널 성장 전략서',
-    description: '구독자 10만 달성을 위한 체계적인 유튜브 성장 로드맵',
-    author: '자생법',
-    category: '유튜브',
-    price: 19000,
-    originalPrice: 49000,
-    downloads: 8543,
-    rating: 4.7,
-    pages: 150,
-    publishDate: '2024.12.01',
-    thumbnail: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    tags: ['유튜브', '채널성장', '구독자', '수익화']
-  },
-  {
-    id: 4,
-    title: '쿠팡 파트너스 마스터 가이드',
-    description: '주부도 억대 매출을 낸 쿠팡 파트너스 완벽 활용법',
-    author: '광마',
-    category: '이커머스',
-    price: 'FREE',
-    originalPrice: 35000,
-    downloads: 23451,
-    rating: 5.0,
-    pages: 88,
-    publishDate: '2024.10.28',
-    thumbnail: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    tags: ['쿠팡', '이커머스', '파트너스', '수익화']
-  },
-  {
-    id: 5,
-    title: '인스타그램 마케팅 실전 가이드',
-    description: '팔로워 0명에서 시작해서 월 1000만원 매출 달성하기',
-    author: '김다솔',
-    category: '마케팅',
-    price: 25000,
-    originalPrice: 59000,
-    downloads: 11234,
-    rating: 4.8,
-    pages: 180,
-    publishDate: '2024.11.10',
-    thumbnail: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    tags: ['인스타그램', '마케팅', 'SNS', '팔로워']
-  },
-  {
-    id: 6,
-    title: '디지털 노마드 생활 가이드',
-    description: '장소에 구애받지 않고 자유롭게 일하며 살아가는 방법',
-    author: '어비',
-    category: '라이프스타일',
-    price: 'FREE',
-    originalPrice: 42000,
-    downloads: 9876,
-    rating: 4.6,
-    pages: 95,
-    publishDate: '2024.11.25',
-    thumbnail: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-    tags: ['디지털노마드', '자유', '원격근무', '라이프스타일']
-  }
-]
+interface Ebook {
+  id: string
+  title: string
+  description: string
+  author: string
+  category: string
+  price: number
+  is_free: boolean
+  download_count: number
+  file_size: number
+  status: string
+  created_at: string
+  tags: string[]
+  cover_image?: string
+}
 
 export default function EbooksPage() {
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedPrice, setSelectedPrice] = useState('')
-  const [loading, setLoading] = useState<{ [key: number]: boolean }>({})
+  const [loading, setLoading] = useState<{ [key: string]: boolean }>({})
+  const [ebooks, setEbooks] = useState<Ebook[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // 전자책 데이터 가져오기
+  useEffect(() => {
+    fetchEbooks()
+  }, [])
+
+  const fetchEbooks = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/ebooks')
+      
+      if (!response.ok) {
+        throw new Error('전자책 데이터를 가져오는데 실패했습니다.')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // published 상태인 전자책만 표시
+        const publishedEbooks = data.ebooks.filter((ebook: Ebook) => ebook.status === 'published')
+        setEbooks(publishedEbooks)
+      } else {
+        throw new Error(data.error || '전자책 데이터를 가져오는데 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('전자책 데이터 가져오기 실패:', error)
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredEbooks = ebooks.filter(ebook => {
     const matchesSearch = ebook.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,21 +70,38 @@ export default function EbooksPage() {
                          ebook.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = !selectedCategory || ebook.category === selectedCategory
     const matchesPrice = !selectedPrice || 
-      (selectedPrice === 'free' && ebook.price === 'FREE') ||
-      (selectedPrice === 'paid' && ebook.price !== 'FREE')
+      (selectedPrice === 'free' && ebook.is_free) ||
+      (selectedPrice === 'paid' && !ebook.is_free)
     
     return matchesSearch && matchesCategory && matchesPrice
   })
 
-  const formatPrice = (price: number | string) => {
-    if (price === 'FREE') return '무료'
+  const formatPrice = (ebook: Ebook) => {
+    if (ebook.is_free) return '무료'
     return new Intl.NumberFormat('ko-KR', {
       style: 'currency',
       currency: 'KRW',
-    }).format(price as number)
+    }).format(ebook.price)
   }
 
-  const handleDownloadOrPurchase = async (ebook: any) => {
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\./g, '.').replace(/ /g, '')
+  }
+
+  const handleDownloadOrPurchase = async (ebook: Ebook) => {
     if (!user) {
       alert('로그인이 필요합니다.')
       return
@@ -136,33 +110,31 @@ export default function EbooksPage() {
     setLoading(prev => ({ ...prev, [ebook.id]: true }))
 
     try {
-      const action = ebook.price === 'FREE' ? 'download' : 'purchase'
+      const action = ebook.is_free ? 'download' : 'purchase'
       
-      const response = await fetch('/api/ebooks/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ebookId: ebook.id,
-          action: action
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        if (action === 'download') {
-          alert('무료 다운로드가 시작됩니다!')
-          // 실제로는 파일 다운로드를 시작합니다
-          window.open(data.downloadUrl, '_blank')
+      if (action === 'download') {
+        // 무료 전자책 다운로드
+        const response = await fetch(`/api/ebooks/download/${ebook.id}`)
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.style.display = 'none'
+          a.href = url
+          a.download = `${ebook.title}.pdf`
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+          alert('다운로드가 시작됩니다!')
         } else {
-          alert('구매가 완료되었습니다! 다운로드를 시작합니다.')
-          // 실제로는 파일 다운로드를 시작합니다
-          window.open(data.downloadUrl, '_blank')
+          const errorData = await response.json()
+          alert(errorData.error || '다운로드에 실패했습니다.')
         }
       } else {
-        alert(data.error || '처리 중 오류가 발생했습니다.')
+        // 유료 전자책 구매 (향후 구현)
+        alert('유료 전자책 구매 기능은 준비 중입니다.')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -245,130 +217,164 @@ export default function EbooksPage() {
       {/* Ebooks Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEbooks.map((ebook) => (
-              <div key={ebook.id} className="group">
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col">
-                  {/* Ebook Cover */}
-                  <div
-                    className="h-64 relative"
-                    style={{ background: ebook.thumbnail }}
-                  >
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-                    
-                    {/* Badge */}
-                    <div className="absolute top-4 left-4">
-                      <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                        ebook.price === 'FREE' 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-orange-500 text-white'
-                      }`}>
-                        {ebook.price === 'FREE' ? '무료' : '유료'}
-                      </span>
-                    </div>
+          {/* 로딩 상태 */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">전자책을 불러오는 중...</span>
+            </div>
+          )}
 
-                    {/* Download Icon */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-white/90 rounded-full p-4">
-                        <Download className="w-8 h-8 text-blue-600" />
-                      </div>
-                    </div>
+          {/* 오류 상태 */}
+          {error && (
+            <div className="text-center py-16">
+              <div className="text-red-600 mb-4">⚠️ {error}</div>
+              <button
+                onClick={fetchEbooks}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
 
-                    {/* Title Overlay */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-white font-bold text-lg line-clamp-2">
-                        {ebook.title}
-                      </h3>
-                    </div>
-                  </div>
+          {/* 전자책이 없는 경우 */}
+          {!isLoading && !error && filteredEbooks.length === 0 && (
+            <div className="text-center py-16">
+              <div className="text-gray-500 mb-4">📚 표시할 전자책이 없습니다.</div>
+              <p className="text-gray-400">
+                {ebooks.length === 0 
+                  ? '아직 등록된 전자책이 없습니다.' 
+                  : '검색 조건에 맞는 전자책이 없습니다. 필터를 조정해보세요.'
+                }
+              </p>
+            </div>
+          )}
 
-                  {/* Ebook Info */}
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
-                        {ebook.category}
-                      </span>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Star className="w-3 h-3 text-yellow-400 mr-1" />
-                        <span>{ebook.rating}</span>
-                      </div>
-                    </div>
-
-                    {/* 고정 높이로 설명 텍스트 설정 */}
-                    <div className="mb-4 flex-grow">
-                      <p className="text-gray-600 text-sm h-10 line-clamp-2">
-                        {ebook.description}
-                      </p>
-                    </div>
-
-                    {/* Tags - 고정 높이 */}
-                    <div className="flex flex-wrap gap-1 mb-4 h-8">
-                      {ebook.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"
-                        >
-                          #{tag}
+          {/* 전자책 목록 */}
+          {!isLoading && !error && filteredEbooks.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredEbooks.map((ebook) => (
+                <div key={ebook.id} className="group block">
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col border-2 border-gray-200">
+                    {/* Ebook Cover */}
+                    <div className="aspect-square relative overflow-hidden flex-shrink-0">
+                      {ebook.cover_image ? (
+                        <img
+                          src={ebook.cover_image}
+                          alt={ebook.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600">
+                        </div>
+                      )}
+                      
+                      {/* Free/Paid Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          ebook.is_free 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-orange-100 text-orange-800'
+                        }`}>
+                          {ebook.is_free ? '무료' : '유료'}
                         </span>
-                      ))}
-                    </div>
+                      </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center">
-                          <Eye className="w-4 h-4 mr-1" />
-                          {ebook.downloads.toLocaleString()}
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {ebook.publishDate}
+                      {/* Category Badge */}
+                      <div className="absolute top-3 right-3">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          📚 전자책
+                        </span>
+                      </div>
+
+                      {/* Hover Download Button */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="bg-white/90 rounded-full p-3">
+                          <Download className="w-6 h-6 text-blue-600" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Author */}
-                    <div className="text-sm text-gray-600 mb-4">
-                      저자: <span className="font-medium text-gray-900">{ebook.author}</span>
-                    </div>
+                    {/* Ebook Info */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                          {ebook.category || '프로그래밍'}
+                        </span>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Eye className="w-3 h-3 mr-1" />
+                          <span>{ebook.download_count}</span>
+                        </div>
+                      </div>
 
-                    {/* Price & Download - 하단 고정 */}
-                    <div className="flex items-center justify-between mt-auto">
-                      <div>
-                        {ebook.price === 'FREE' ? (
-                          <div className="text-xl font-bold text-green-600">무료</div>
-                        ) : (
-                          <div>
-                            <div className="text-lg font-bold text-blue-600">
-                              {formatPrice(ebook.price)}
-                            </div>
-                            <div className="text-xs text-gray-500 line-through">
-                              {formatPrice(ebook.originalPrice)}
-                            </div>
+                      {/* 제목과 설명 - 고정 높이 영역 */}
+                      <div className="flex-1 mb-3">
+                        <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors h-8">
+                          {ebook.title}
+                        </h3>
+                        
+                        <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed h-6">
+                          {ebook.description}
+                        </p>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center">
+                            <Download className="w-4 h-4 mr-1" />
+                            {ebook.download_count.toLocaleString()}
                           </div>
-                        )}
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {ebook.author}
+                          </div>
+                        </div>
                       </div>
-                      <button 
-                        onClick={() => handleDownloadOrPurchase(ebook)}
-                        disabled={loading[ebook.id]}
-                        className={`px-6 py-2 rounded-lg text-sm transition-colors flex items-center ${
-                          loading[ebook.id]
-                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        {loading[ebook.id] 
-                          ? '처리중...' 
-                          : ebook.price === 'FREE' ? '무료 다운' : '구매하기'
-                        }
-                      </button>
+
+                      {/* Price - 고정 높이로 카드 크기 통일 */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex flex-col h-8 justify-end">
+                            {!ebook.is_free ? (
+                              <>
+                                <div className="h-5"></div>
+                                <div className="text-xl font-bold text-orange-600">
+                                  {formatPrice(ebook)}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="h-5"></div>
+                                <div className="text-xl font-bold text-green-600">
+                                  무료
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleDownloadOrPurchase(ebook)}
+                          disabled={loading[ebook.id]}
+                          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                            loading[ebook.id]
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {loading[ebook.id] 
+                            ? '처리중...' 
+                            : ebook.is_free ? '다운로드' : '구매하기'
+                          }
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

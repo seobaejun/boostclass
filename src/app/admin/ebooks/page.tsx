@@ -75,6 +75,8 @@ export default function EbookManagementPage() {
     tags: [] as string[]
   })
   const [newTag, setNewTag] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const itemsPerPage = 10
 
@@ -109,13 +111,38 @@ export default function EbookManagementPage() {
     setShowEditModal(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingEbook) return
-    console.log('전자책 수정 저장:', editForm)
-    setShowEditModal(false)
-    setEditingEbook(null)
-    setEditForm({})
-    fetchEbooks()
+    
+    try {
+      const response = await fetch(`/api/admin/ebooks/${editingEbook.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editForm)
+      })
+      
+      if (!response.ok) {
+        throw new Error('전자책 수정에 실패했습니다.')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('전자책 수정 성공:', data)
+        
+        setShowEditModal(false)
+        setEditingEbook(null)
+        setEditForm({})
+        fetchEbooks()
+      } else {
+        setError(data.error || '전자책 수정 중 오류가 발생했습니다.')
+      }
+    } catch (error) {
+      console.error('전자책 수정 오류:', error)
+      setError('전자책 수정 중 오류가 발생했습니다.')
+    }
   }
 
   const handleDeleteEbook = (ebook: Ebook) => {
@@ -123,27 +150,129 @@ export default function EbookManagementPage() {
     setShowDeleteModal(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!editingEbook) return
-    console.log('전자책 삭제:', editingEbook.id)
-    setShowDeleteModal(false)
-    setEditingEbook(null)
-    fetchEbooks()
+    
+    try {
+      const response = await fetch(`/api/admin/ebooks/${editingEbook.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('전자책 삭제에 실패했습니다.')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('전자책 삭제 성공:', data)
+        
+        setShowDeleteModal(false)
+        setEditingEbook(null)
+        fetchEbooks()
+      } else {
+        setError(data.error || '전자책 삭제 중 오류가 발생했습니다.')
+      }
+    } catch (error) {
+      console.error('전자책 삭제 오류:', error)
+      setError('전자책 삭제 중 오류가 발생했습니다.')
+    }
   }
 
-  const handleUploadEbook = () => {
-    console.log('전자책 업로드:', uploadForm)
-    setShowUploadModal(false)
-    setUploadForm({
-      title: '',
-      description: '',
-      author: '',
-      category: '프로그래밍',
-      price: 0,
-      is_free: true,
-      tags: []
-    })
-    fetchEbooks()
+  const handleUploadEbook = async () => {
+    // 필수 필드 검증
+    if (!uploadForm.title.trim()) {
+      setError('제목을 입력해주세요.')
+      return
+    }
+    if (!uploadForm.description.trim()) {
+      setError('설명을 입력해주세요.')
+      return
+    }
+    if (!uploadForm.author.trim()) {
+      setError('저자를 입력해주세요.')
+      return
+    }
+    if (!selectedFile) {
+      setError('PDF 파일을 선택해주세요.')
+      return
+    }
+    
+    try {
+      setUploading(true)
+      setError(null)
+      
+      // FormData 생성
+      const formData = new FormData()
+      formData.append('title', uploadForm.title)
+      formData.append('description', uploadForm.description)
+      formData.append('author', uploadForm.author)
+      formData.append('category', uploadForm.category)
+      formData.append('price', uploadForm.price.toString())
+      formData.append('is_free', uploadForm.is_free.toString())
+      formData.append('tags', JSON.stringify(uploadForm.tags))
+      formData.append('file', selectedFile)
+      
+      const response = await fetch('/api/admin/ebooks/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      console.log('업로드 응답 상태:', response.status, response.statusText)
+      console.log('응답 헤더:', Object.fromEntries(response.headers.entries()))
+      
+      if (!response.ok) {
+        // 응답 텍스트 먼저 확인
+        const responseText = await response.text()
+        console.error('업로드 실패 응답 텍스트:', responseText)
+        
+        let errorData = {}
+        try {
+          errorData = JSON.parse(responseText)
+        } catch (e) {
+          console.error('JSON 파싱 실패:', e)
+          errorData = { error: responseText || '알 수 없는 오류가 발생했습니다.' }
+        }
+        
+        console.error('업로드 실패 응답:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}: 전자책 업로드에 실패했습니다.`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        console.log('전자책 업로드 성공:', data)
+        
+        setShowUploadModal(false)
+        setUploadForm({
+          title: '',
+          description: '',
+          author: '',
+          category: '프로그래밍',
+          price: 0,
+          is_free: true,
+          tags: []
+        })
+        setNewTag('')
+        setSelectedFile(null)
+        fetchEbooks()
+      } else {
+        // 테이블이 없는 경우 특별 처리
+        if (data.tableRequired) {
+          setError('ebooks 테이블이 존재하지 않습니다. Supabase에서 create-ebooks-table.sql 스크립트를 실행해주세요.')
+        } else {
+          setError(data.error || '전자책 업로드 중 오류가 발생했습니다.')
+        }
+      }
+    } catch (error) {
+      console.error('전자책 업로드 오류:', error)
+      setError('전자책 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleAddTag = () => {
@@ -163,6 +292,36 @@ export default function EbookManagementPage() {
     }))
   }
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // PDF 파일 검증
+      if (file.type !== 'application/pdf') {
+        setError('PDF 파일만 업로드 가능합니다.')
+        return
+      }
+      
+      // 파일 크기 검증 (50MB)
+      const maxSize = 50 * 1024 * 1024
+      if (file.size > maxSize) {
+        setError('파일 크기는 50MB를 초과할 수 없습니다.')
+        return
+      }
+      
+      setSelectedFile(file)
+      setError(null)
+      console.log('선택된 파일:', { name: file.name, size: file.size, type: file.type })
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
   const getStatusText = (status: string) => {
     const statusMap: { [key: string]: string } = {
       'published': '발행됨',
@@ -179,14 +338,6 @@ export default function EbookManagementPage() {
       'archived': 'bg-gray-100 text-gray-800'
     }
     return colorMap[status] || 'bg-gray-100 text-gray-800'
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   const formatCurrency = (amount: number) => {
@@ -224,6 +375,14 @@ export default function EbookManagementPage() {
       }
 
       const data = await response.json()
+      
+      // 테이블이 없는 경우 메시지 표시
+      if (data.message && data.message.includes('테이블이 존재하지 않습니다')) {
+        setError('ebooks 테이블이 존재하지 않습니다. Supabase에서 테이블을 먼저 생성해주세요.')
+        setLoading(false)
+        return
+      }
+      
       const allEbooks = data.ebooks || []
 
       // 필터링 적용
@@ -311,6 +470,26 @@ export default function EbookManagementPage() {
           >
             <RefreshCw className="w-5 h-5 mr-2" />
             새로고침
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/test-supabase-storage')
+                const data = await response.json()
+                console.log('Supabase Storage 테스트 결과:', data)
+                if (data.success) {
+                  alert('✅ Supabase Storage 연결 성공!\n' + JSON.stringify(data.data, null, 2))
+                } else {
+                  alert('❌ Supabase Storage 연결 실패:\n' + data.error + '\n단계: ' + data.step)
+                }
+              } catch (error) {
+                console.error('테스트 오류:', error)
+                alert('테스트 중 오류 발생: ' + error)
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            🧪 Storage 테스트
           </button>
         </div>
       </div>
@@ -463,7 +642,25 @@ export default function EbookManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {ebooks.map((ebook) => (
+              {ebooks.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center">
+                      <FileText className="w-12 h-12 text-gray-400 mb-4" />
+                      <p className="text-gray-500 text-lg font-medium mb-2">등록된 전자책이 없습니다</p>
+                      <p className="text-gray-400 text-sm mb-4">새로운 전자책을 업로드해보세요</p>
+                      <button
+                        onClick={() => setShowUploadModal(true)}
+                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        전자책 업로드
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                ebooks.map((ebook) => (
                 <tr key={ebook.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -509,6 +706,17 @@ export default function EbookManagementPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {ebook.status === 'published' && (
+                        <a
+                          href={`/api/ebooks/download/${ebook.id}`}
+                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                          title="다운로드"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      )}
                       <button
                         onClick={() => handleEditEbook(ebook)}
                         className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
@@ -526,7 +734,8 @@ export default function EbookManagementPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -850,10 +1059,36 @@ export default function EbookManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">파일 업로드</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-gray-600">PDF 파일을 드래그하거나 클릭하여 업로드</p>
-                    <p className="text-xs text-gray-500 mt-1">최대 50MB, PDF 형식만 지원</p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="pdf-upload"
+                    />
+                    <label htmlFor="pdf-upload" className="cursor-pointer">
+                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      {selectedFile ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-green-600">✅ 파일 선택됨</p>
+                          <p className="text-sm text-gray-900">{selectedFile.name}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedFile(null)}
+                            className="text-xs text-red-600 hover:text-red-800 underline"
+                          >
+                            파일 제거
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm text-gray-600">PDF 파일을 클릭하여 업로드</p>
+                          <p className="text-xs text-gray-500 mt-1">최대 50MB, PDF 형식만 지원</p>
+                        </div>
+                      )}
+                    </label>
                   </div>
                 </div>
               </div>
@@ -866,10 +1101,24 @@ export default function EbookManagementPage() {
                 </button>
                 <button
                   onClick={handleUploadEbook}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 flex items-center"
+                  disabled={uploading || !selectedFile}
+                  className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md flex items-center ${
+                    uploading || !selectedFile 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  업로드
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      업로드 중...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      업로드
+                    </>
+                  )}
                 </button>
               </div>
             </div>
