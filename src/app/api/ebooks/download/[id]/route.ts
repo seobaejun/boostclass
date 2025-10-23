@@ -51,8 +51,54 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }, { status: 404 })
     }
 
-    // 유료 전자책인 경우 구매 확인
-    if (!ebook.is_free) {
+    // 무료 전자책인 경우 로그인 확인 및 구매 기록 생성
+    if (ebook.is_free) {
+      if (authError || !user) {
+        return NextResponse.json({ 
+          success: false, 
+          error: '로그인이 필요합니다.' 
+        }, { status: 401 })
+      }
+
+      // 기존 구매 기록 확인
+      const { data: existingPurchase } = await supabase
+        .from('ebook_purchases')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('ebook_id', id)
+        .eq('status', 'completed')
+        .single()
+
+      // 구매 기록이 없으면 생성 (무료 전자책)
+      if (!existingPurchase) {
+        console.log('🆓 무료 전자책 구매 기록 생성 중...')
+        
+        const { data: newPurchase, error: createError } = await supabase
+          .from('ebook_purchases')
+          .insert({
+            user_id: user.id,
+            ebook_id: id,
+            order_id: `free_ebook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            amount: 0,
+            status: 'completed',
+            payment_key: 'free_download',
+            payment_method: 'free',
+            purchased_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('❌ 무료 전자책 구매 기록 생성 실패:', createError)
+          // 구매 기록 생성에 실패해도 다운로드는 허용 (무료이므로)
+        } else {
+          console.log('✅ 무료 전자책 구매 기록 생성 완료:', newPurchase.id)
+        }
+      } else {
+        console.log('✅ 기존 무료 전자책 구매 기록 확인:', existingPurchase.id)
+      }
+    } else {
+      // 유료 전자책인 경우 구매 확인
       if (authError || !user) {
         return NextResponse.json({ 
           success: false, 

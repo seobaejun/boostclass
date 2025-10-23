@@ -223,6 +223,13 @@ export default function EbookDetailPage() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+        
+        // 무료 전자책 다운로드 후 구매 상태 새로고침
+        if (ebook.is_free) {
+          console.log('🆓 무료 전자책 다운로드 완료 - 구매 상태 새로고침')
+          await checkPurchaseStatus()
+        }
+        
         alert('다운로드가 시작됩니다!')
       } else {
         const errorData = await response.json()

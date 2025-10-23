@@ -140,6 +140,67 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ 구매 수동 조인 완료:', purchaseCourses.length, '개')
 
+    // 2.7. 전자책 구매 내역 조회 (ebook_purchases 테이블 - 유료/무료 모두 포함)
+    console.log('🔍 구매한 전자책 조회 중...')
+    
+    const { data: ebookPurchases, error: ebookPurchaseError } = await userSupabase
+      .from('ebook_purchases')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('purchased_at', { ascending: false })
+
+    if (ebookPurchaseError) {
+      console.error('❌ 전자책 구매 내역 조회 실패:', ebookPurchaseError)
+    }
+
+    // 2.8. ebook_purchases에 해당하는 ebooks 조회 (수동 조인)
+    let purchaseEbooks = []
+    if (ebookPurchases && ebookPurchases.length > 0) {
+      const ebookIds = ebookPurchases.map(p => p.ebook_id)
+      console.log('🔍 구매 ebook_ids:', ebookIds)
+
+      const { data: ebooks, error: ebooksError } = await userSupabase
+        .from('ebooks')
+        .select('*')
+        .in('id', ebookIds)
+
+      console.log('📊 구매 ebooks 조회:', ebooks?.length || 0, '개')
+      if (ebooksError) {
+        console.error('❌ 구매 ebooks 조회 실패:', ebooksError)
+      }
+
+      if (ebooks) {
+        purchaseEbooks = ebookPurchases.map(purchase => {
+          const ebook = ebooks.find(e => e.id === purchase.ebook_id)
+          if (ebook) {
+            // 전자책을 강의 형태로 변환
+            return {
+              ...purchase,
+              ebook: {
+                ...ebook,
+                // 강의 형태로 변환
+                id: ebook.id,
+                title: ebook.title,
+                description: ebook.description,
+                instructor: ebook.author || '저자',
+                category: '전자책',
+                price: ebook.price,
+                original_price: ebook.price,
+                duration: 0, // 전자책은 시간이 없음
+                level: 'beginner',
+                thumbnail_url: ebook.thumbnail_url,
+                created_at: ebook.created_at
+              }
+            }
+          }
+          return null
+        }).filter(p => p !== null) // null이 아닌 것만 필터링
+      }
+    }
+
+    console.log('✅ 전자책 수동 조인 완료:', purchaseEbooks.length, '개')
+
     // 3. 데이터 통합 및 중복 제거
     console.log('🔄 데이터 통합 시작...')
     const myCourses = new Map()
@@ -180,6 +241,30 @@ export async function GET(request: NextRequest) {
             purchase_amount: purchase.amount,
             purchased_at: purchase.created_at,
             type: 'purchase'
+          })
+        }
+      })
+    }
+
+    // 구매한 전자책 추가 (중복되지 않는 경우만)
+    if (purchaseEbooks) {
+      console.log('📚 구매한 전자책 처리 중:', purchaseEbooks.length, '개')
+      purchaseEbooks.forEach((purchase: any, index: number) => {
+        console.log(`📖 전자책 ${index + 1}:`, {
+          purchase_id: purchase.id,
+          ebook_id: purchase.ebook_id,
+          ebook_title: purchase.ebook?.title,
+          status: purchase.status
+        })
+        
+        if (purchase.ebook && !myCourses.has(purchase.ebook.id)) {
+          myCourses.set(purchase.ebook.id, {
+            ...purchase.ebook,
+            purchase_id: purchase.id,
+            purchase_amount: purchase.amount,
+            purchased_at: purchase.purchased_at,
+            type: purchase.ebook.is_free ? 'free_ebook' : 'paid_ebook', // 무료/유료 전자책 구분
+            content_type: 'ebook' // 전자책임을 구분하기 위한 필드
           })
         }
       })

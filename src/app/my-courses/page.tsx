@@ -28,12 +28,15 @@ interface Course {
   enrollment_status?: string
   enrolled_at?: string
   progress_percentage?: number
-  type: 'enrollment' | 'purchase'
+  type: 'enrollment' | 'purchase' | 'free_ebook' | 'paid_ebook'
   
   // Purchase specific fields
   purchase_id?: string
   purchase_amount?: number
   purchased_at?: string
+  
+  // Ebook specific fields
+  content_type?: 'course' | 'ebook'
 }
 
 const supabase = createClient()
@@ -243,7 +246,7 @@ export default function MyCoursesPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <BookOpen className="w-8 h-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">내 강의</h1>
+              <h1 className="text-3xl font-bold text-gray-900">내 구매 목록</h1>
             </div>
             <button
               onClick={fetchMyCourses}
@@ -253,19 +256,19 @@ export default function MyCoursesPage() {
             </button>
           </div>
           <p className="text-gray-600">
-            수강신청하거나 구매한 강의들을 확인하고 학습을 진행하세요.
+            수강신청하거나 구매한 강의와 전자책들을 확인하고 학습을 진행하세요.
           </p>
         </div>
 
         {/* 통계 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <BookOpen className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">총 강의 수</p>
+                <p className="text-sm text-gray-600">총 구매 수</p>
                 <p className="text-2xl font-bold text-gray-900">{courses.length}</p>
               </div>
             </div>
@@ -277,7 +280,7 @@ export default function MyCoursesPage() {
                 <Play className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">무료강의</p>
+                <p className="text-sm text-gray-600">무료 강의</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {courses.filter(c => c.type === 'enrollment').length}
                 </p>
@@ -298,26 +301,63 @@ export default function MyCoursesPage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <BookOpen className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">무료 전자책</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {courses.filter(c => c.type === 'free_ebook').length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <BookOpen className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">구매한 전자책</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {courses.filter(c => c.type === 'paid_ebook').length}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 강의 목록 */}
+        {/* 구매 목록 */}
         {courses.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">아직 수강 중인 강의가 없습니다</h3>
-            <p className="text-gray-600 mb-6">새로운 강의를 찾아보세요!</p>
-            <Link 
-              href="/courses"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
-            >
-              <BookOpen className="w-5 h-5" />
-              강의 둘러보기
-            </Link>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">아직 구매한 강의나 전자책이 없습니다</h3>
+            <p className="text-gray-600 mb-6">새로운 강의나 전자책을 찾아보세요!</p>
+            <div className="flex gap-4 justify-center">
+              <Link 
+                href="/courses"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" />
+                강의 둘러보기
+              </Link>
+              <Link 
+                href="/ebooks"
+                className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 inline-flex items-center gap-2"
+              >
+                <BookOpen className="w-5 h-5" />
+                전자책 둘러보기
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="w-full" style={{ position: 'static', transform: 'none', left: '0', right: '0', margin: '0' }}>
             <div 
-              className="my-courses-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" 
+              className="my-courses-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 items-stretch" 
               style={{ 
                 position: 'static', 
                 transform: 'none', 
@@ -330,10 +370,16 @@ export default function MyCoursesPage() {
               }}
             >
               {courses.map((course) => (
-              <div key={course.id} className="my-courses-card w-full" style={{ position: 'static', transform: 'none' }}>
+              <div key={course.id} className="my-courses-card w-full h-full" style={{ position: 'static', transform: 'none' }}>
                 <Link 
-                  href={course.type === 'purchase' ? `/courses/${course.id}/lessons/1` : `/courses/${course.id}`} 
-                  className="block group w-full" 
+                  href={
+                    (course.type === 'free_ebook' || course.type === 'paid_ebook')
+                      ? `/ebooks/${course.id}` 
+                      : course.type === 'purchase' 
+                        ? `/courses/${course.id}/lessons/1` 
+                        : `/courses/${course.id}`
+                  } 
+                  className="block group w-full h-full" 
                   style={{ position: 'static', transform: 'none' }}
                 >
                   <div 
@@ -363,6 +409,14 @@ export default function MyCoursesPage() {
                         <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                           무료강의
                         </span>
+                      ) : (course.type === 'free_ebook' || course.type === 'paid_ebook') ? (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          course.type === 'free_ebook' 
+                            ? 'bg-orange-500 text-white' 
+                            : 'bg-red-500 text-white'
+                        }`}>
+                          {course.type === 'free_ebook' ? '무료 전자책' : '유료 전자책'}
+                        </span>
                       ) : (
                         <span className="bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                           구매완료
@@ -388,8 +442,15 @@ export default function MyCoursesPage() {
                   {/* 강의 정보 - 완전한 정보 포함 */}
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
-                        {course.category || '무료강의'}
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${
+                        (course.type === 'free_ebook' || course.type === 'paid_ebook')
+                          ? (course.type === 'free_ebook' ? 'text-orange-600 bg-orange-50' : 'text-red-600 bg-red-50')
+                          : 'text-blue-600 bg-blue-50'
+                      }`}>
+                        {(course.type === 'free_ebook' || course.type === 'paid_ebook') 
+                          ? (course.type === 'free_ebook' ? '무료 전자책' : '유료 전자책')
+                          : (course.category || '무료강의')
+                        }
                       </span>
                       <div className="flex items-center text-xs text-gray-500">
                         <Star className="w-3 h-3 text-yellow-400 mr-1" />
@@ -401,9 +462,14 @@ export default function MyCoursesPage() {
                     <div className="flex-1 mb-3">
                       <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
                         {course.title}
-                        {course.type === 'purchase' && (
-                          <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                            구매완료
+                        {(course.type === 'purchase' || course.type === 'free_ebook' || course.type === 'paid_ebook') && (
+                          <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
+                            (course.type === 'free_ebook' || course.type === 'paid_ebook')
+                              ? (course.type === 'free_ebook' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800')
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {course.type === 'free_ebook' ? '무료 다운로드' : 
+                             course.type === 'paid_ebook' ? '구매완료' : '구매완료'}
                           </span>
                         )}
                       </h3>
@@ -439,10 +505,18 @@ export default function MyCoursesPage() {
                         <User className="w-4 h-4" />
                         <span>{course.instructor}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatDuration(course.duration)}</span>
-                      </div>
+                      {(course.type !== 'free_ebook' && course.type !== 'paid_ebook') && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatDuration(course.duration)}</span>
+                        </div>
+                      )}
+                      {(course.type === 'free_ebook' || course.type === 'paid_ebook') && (
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="w-4 h-4" />
+                          <span>PDF</span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* 진도율 (수강신청한 경우만) */}
@@ -462,8 +536,16 @@ export default function MyCoursesPage() {
                     )}
 
                     {/* 수강 상태 */}
-                    <div className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded text-center">
-                      {course.type === 'enrollment' ? '수강중' : '구매완료'}
+                    <div className={`text-xs font-medium px-2 py-1 rounded text-center mt-auto ${
+                      course.type === 'enrollment' 
+                        ? 'text-green-600 bg-green-50' 
+                        : (course.type === 'free_ebook' || course.type === 'paid_ebook')
+                          ? (course.type === 'free_ebook' ? 'text-orange-600 bg-orange-50' : 'text-red-600 bg-red-50')
+                          : 'text-purple-600 bg-purple-50'
+                    }`}>
+                      {course.type === 'enrollment' ? '수강중' : 
+                       course.type === 'free_ebook' ? '무료 다운로드' :
+                       course.type === 'paid_ebook' ? '유료 구매완료' : '구매완료'}
                     </div>
                   </div>
                   </div>
