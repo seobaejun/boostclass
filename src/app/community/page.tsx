@@ -224,7 +224,7 @@ export default function CommunityPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* 검색 */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 mb-8">
               <h3 className="text-lg font-semibold mb-4">검색</h3>
               <form onSubmit={handleSearch} className="space-y-4">
                 <div className="relative">
@@ -248,7 +248,7 @@ export default function CommunityPage() {
 
             {/* 필터 상태 */}
             {(searchTerm || selectedTag || selectedCategory !== '전체') && (
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 mb-8">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold">활성 필터</h3>
                   <button
@@ -297,7 +297,7 @@ export default function CommunityPage() {
             )}
 
             {/* 카테고리 */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 mb-8">
               <h3 className="text-lg font-semibold mb-4">카테고리</h3>
               <div className="space-y-2">
                 {categories.map((category, index) => (
@@ -317,7 +317,7 @@ export default function CommunityPage() {
             </div>
 
             {/* 인기 태그 */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
               <h3 className="text-lg font-semibold mb-4">인기 태그</h3>
               {popularTags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -372,14 +372,14 @@ export default function CommunityPage() {
             </div>
 
             {/* Posts List */}
-            <div className="space-y-4">
+            <div>
               {loading ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
                   <div className="text-gray-500 text-lg mb-4">게시글을 불러오는 중...</div>
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 </div>
               ) : error ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
                   <div className="text-red-500 text-lg mb-4">오류가 발생했습니다</div>
                   <p className="text-gray-400 mb-4">{error}</p>
                   <button 
@@ -390,7 +390,7 @@ export default function CommunityPage() {
                   </button>
                 </div>
               ) : paginatedPosts.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
                   <div className="text-gray-500 text-lg mb-4">
                     {posts.length === 0 ? '아직 작성된 게시글이 없습니다' : '검색 결과가 없습니다'}
                   </div>
@@ -401,7 +401,7 @@ export default function CommunityPage() {
               ) : (
                 paginatedPosts.map((post) => (
                 <Link key={post.id} href={`/community/${post.id}`}>
-                  <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md hover:border-blue-300 border border-transparent transition-all duration-200 cursor-pointer group">
+                  <div className="bg-white rounded-lg shadow-md p-8 hover:shadow-lg hover:border-blue-300 border border-gray-200 transition-all duration-200 cursor-pointer group mb-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
