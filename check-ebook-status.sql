@@ -1,15 +1,18 @@
--- 현재 전자책 상태 확인
-SELECT 
-  id,
-  title,
-  author,
-  status,
-  is_free,
-  price,
-  download_count,
-  created_at
-FROM ebooks
-ORDER BY created_at DESC;
+-- 업로드된 전자책 상태 확인
 
--- 전자책을 published 상태로 변경 (필요시 실행)
--- UPDATE ebooks SET status = 'published' WHERE status = 'draft';
+-- 1. 모든 전자책 데이터 확인
+SELECT id, title, author, status, created_at, thumbnail_url, detail_image_url
+FROM ebooks 
+ORDER BY created_at DESC 
+LIMIT 5;
+
+-- 2. 상태별 전자책 개수 확인
+SELECT status, COUNT(*) as count
+FROM ebooks 
+GROUP BY status;
+
+-- 3. 최근 업로드된 전자책의 상세 정보
+SELECT *
+FROM ebooks 
+ORDER BY created_at DESC 
+LIMIT 1;

@@ -21,7 +21,9 @@ CREATE TABLE ebooks (
   featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-  cover_image TEXT,
+  cover_image TEXT, -- 기존 호환성을 위해 유지
+  thumbnail_url TEXT, -- 썸네일 이미지 URL (목록에서 표시)
+  detail_image_url TEXT, -- 상세 이미지 URL (상세페이지에서 표시)
   tags TEXT[] DEFAULT '{}'
 );
 

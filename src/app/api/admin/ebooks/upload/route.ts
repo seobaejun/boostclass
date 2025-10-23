@@ -23,9 +23,15 @@ export async function POST(request: NextRequest) {
     const is_free = formData.get('is_free') === 'true'
     const tags = JSON.parse(formData.get('tags') as string || '[]')
     const file = formData.get('file') as File
+    const thumbnailFile = formData.get('thumbnail') as File | null
+    const detailImageFile = formData.get('detailImage') as File | null
     
     console.log('업로드 정보:', { title, author, category, price, is_free })
     console.log('파일 정보:', { name: file?.name, size: file?.size, type: file?.type })
+    console.log('이미지 파일 정보:', { 
+      thumbnail: thumbnailFile ? { name: thumbnailFile.name, size: thumbnailFile.size } : null,
+      detailImage: detailImageFile ? { name: detailImageFile.name, size: detailImageFile.size } : null
+    })
     
     // 파일 유효성 검사
     if (!file) {
@@ -133,6 +139,58 @@ export async function POST(request: NextRequest) {
     
     console.log('Supabase Storage 업로드 성공:', uploadData)
     
+    // 이미지 파일들 업로드
+    let thumbnailUrl = null
+    let detailImageUrl = null
+    
+    if (thumbnailFile) {
+      console.log('🖼️ 썸네일 이미지 업로드 시작...')
+      const thumbnailBuffer = await thumbnailFile.arrayBuffer()
+      const thumbnailFileName = `${ebookId}_thumbnail_${Date.now()}.${thumbnailFile.name.split('.').pop()}`
+      
+      const { data: thumbnailUploadData, error: thumbnailUploadError } = await supabase.storage
+        .from('ebook-thumbnails')
+        .upload(thumbnailFileName, thumbnailBuffer, {
+          contentType: thumbnailFile.type,
+          upsert: false
+        })
+      
+      if (thumbnailUploadError) {
+        console.error('썸네일 업로드 오류:', thumbnailUploadError)
+      } else {
+        console.log('✅ 썸네일 업로드 성공:', thumbnailUploadData)
+        // 공개 URL 생성
+        const { data: thumbnailPublicData } = supabase.storage
+          .from('ebook-thumbnails')
+          .getPublicUrl(thumbnailUploadData.path)
+        thumbnailUrl = thumbnailPublicData.publicUrl
+      }
+    }
+    
+    if (detailImageFile) {
+      console.log('🖼️ 상세 이미지 업로드 시작...')
+      const detailImageBuffer = await detailImageFile.arrayBuffer()
+      const detailImageFileName = `${ebookId}_detail_${Date.now()}.${detailImageFile.name.split('.').pop()}`
+      
+      const { data: detailImageUploadData, error: detailImageUploadError } = await supabase.storage
+        .from('ebook-details')
+        .upload(detailImageFileName, detailImageBuffer, {
+          contentType: detailImageFile.type,
+          upsert: false
+        })
+      
+      if (detailImageUploadError) {
+        console.error('상세 이미지 업로드 오류:', detailImageUploadError)
+      } else {
+        console.log('✅ 상세 이미지 업로드 성공:', detailImageUploadData)
+        // 공개 URL 생성
+        const { data: detailImagePublicData } = supabase.storage
+          .from('ebook-details')
+          .getPublicUrl(detailImageUploadData.path)
+        detailImageUrl = detailImagePublicData.publicUrl
+      }
+    }
+    
     // 전자책 데이터 준비
     const ebookData = {
       id: ebookId,
@@ -151,6 +209,8 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       cover_image: null,
+      thumbnail_url: thumbnailUrl,
+      detail_image_url: detailImageUrl,
       tags
     }
     

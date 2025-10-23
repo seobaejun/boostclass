@@ -21,6 +21,8 @@ interface Ebook {
   created_at: string
   tags: string[]
   cover_image?: string
+  thumbnail_url?: string
+  detail_image_url?: string
 }
 
 export default function EbooksPage() {
@@ -259,7 +261,13 @@ export default function EbooksPage() {
                   <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-full flex flex-col border-2 border-gray-200">
                     {/* Ebook Cover */}
                     <div className="aspect-square relative overflow-hidden flex-shrink-0">
-                      {ebook.cover_image ? (
+                      {ebook.thumbnail_url ? (
+                        <img
+                          src={ebook.thumbnail_url}
+                          alt={ebook.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : ebook.cover_image ? (
                         <img
                           src={ebook.cover_image}
                           alt={ebook.title}
@@ -302,10 +310,6 @@ export default function EbooksPage() {
                         <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
                           {ebook.category || '프로그래밍'}
                         </span>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Eye className="w-3 h-3 mr-1" />
-                          <span>{ebook.download_count}</span>
-                        </div>
                       </div>
 
                       {/* 제목과 설명 - 고정 높이 영역 */}
@@ -322,10 +326,6 @@ export default function EbooksPage() {
                       {/* Stats */}
                       <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
                         <div className="flex items-center space-x-3">
-                          <div className="flex items-center">
-                            <Download className="w-4 h-4 mr-1" />
-                            {ebook.download_count.toLocaleString()}
-                          </div>
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1" />
                             {ebook.author}
@@ -354,20 +354,13 @@ export default function EbooksPage() {
                             )}
                           </div>
                         </div>
-                        <button 
-                          onClick={() => handleDownloadOrPurchase(ebook)}
-                          disabled={loading[ebook.id]}
-                          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                            loading[ebook.id]
-                              ? 'bg-gray-400 text-white cursor-not-allowed'
-                              : 'bg-blue-500 text-white hover:bg-blue-600'
-                          }`}
+                        <Link
+                          href={`/ebooks/${ebook.id}`}
+                          className="px-4 py-2 rounded-lg text-sm transition-colors bg-blue-500 text-white hover:bg-blue-600 flex items-center justify-center"
                         >
-                          {loading[ebook.id] 
-                            ? '처리중...' 
-                            : ebook.is_free ? '다운로드' : '구매하기'
-                          }
-                        </button>
+                          <Eye className="w-4 h-4 mr-1" />
+                          더알아보기
+                        </Link>
                       </div>
                     </div>
                   </div>

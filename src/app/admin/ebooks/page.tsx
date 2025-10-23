@@ -46,6 +46,8 @@ interface Ebook {
   created_at: string
   updated_at: string
   cover_image?: string
+  thumbnail_url?: string
+  detail_image_url?: string
   tags: string[]
 }
 
@@ -76,6 +78,8 @@ export default function EbookManagementPage() {
   })
   const [newTag, setNewTag] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null)
+  const [selectedDetailImage, setSelectedDetailImage] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
 
   const itemsPerPage = 10
@@ -216,6 +220,14 @@ export default function EbookManagementPage() {
       formData.append('tags', JSON.stringify(uploadForm.tags))
       formData.append('file', selectedFile)
       
+      // 이미지 파일들 추가
+      if (selectedThumbnail) {
+        formData.append('thumbnail', selectedThumbnail)
+      }
+      if (selectedDetailImage) {
+        formData.append('detailImage', selectedDetailImage)
+      }
+      
       const response = await fetch('/api/admin/ebooks/upload', {
         method: 'POST',
         body: formData
@@ -258,6 +270,8 @@ export default function EbookManagementPage() {
         })
         setNewTag('')
         setSelectedFile(null)
+        setSelectedThumbnail(null)
+        setSelectedDetailImage(null)
         fetchEbooks()
       } else {
         // 테이블이 없는 경우 특별 처리
@@ -311,6 +325,48 @@ export default function EbookManagementPage() {
       setSelectedFile(file)
       setError(null)
       console.log('선택된 파일:', { name: file.name, size: file.size, type: file.type })
+    }
+  }
+
+  const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // 이미지 파일 검증
+      if (!file.type.startsWith('image/')) {
+        setError('이미지 파일만 업로드 가능합니다.')
+        return
+      }
+      
+      // 파일 크기 검증 (5MB 제한)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        setError('이미지 파일 크기는 5MB를 초과할 수 없습니다.')
+        return
+      }
+      
+      setSelectedThumbnail(file)
+      setError(null)
+    }
+  }
+
+  const handleDetailImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // 이미지 파일 검증
+      if (!file.type.startsWith('image/')) {
+        setError('이미지 파일만 업로드 가능합니다.')
+        return
+      }
+      
+      // 파일 크기 검증 (5MB 제한)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        setError('이미지 파일 크기는 5MB를 초과할 수 없습니다.')
+        return
+      }
+      
+      setSelectedDetailImage(file)
+      setError(null)
     }
   }
 
@@ -1086,6 +1142,86 @@ export default function EbookManagementPage() {
                         <div>
                           <p className="text-sm text-gray-600">PDF 파일을 클릭하여 업로드</p>
                           <p className="text-xs text-gray-500 mt-1">최대 50MB, PDF 형식만 지원</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                {/* 썸네일 이미지 업로드 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">썸네일 이미지 (선택사항)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailSelect}
+                      className="hidden"
+                      id="thumbnail-upload"
+                    />
+                    <label htmlFor="thumbnail-upload" className="cursor-pointer">
+                      {selectedThumbnail ? (
+                        <div className="space-y-2">
+                          <img
+                            src={URL.createObjectURL(selectedThumbnail)}
+                            alt="썸네일 미리보기"
+                            className="w-24 h-24 object-cover mx-auto rounded-lg"
+                          />
+                          <p className="text-sm font-medium text-green-600">✅ 썸네일 선택됨</p>
+                          <p className="text-xs text-gray-500">{selectedThumbnail.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedThumbnail(null)}
+                            className="text-xs text-red-600 hover:text-red-800 underline"
+                          >
+                            이미지 제거
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">썸네일 이미지 업로드</p>
+                          <p className="text-xs text-gray-500 mt-1">최대 5MB, JPG/PNG 형식</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                {/* 상세 이미지 업로드 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">상세 이미지 (선택사항)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleDetailImageSelect}
+                      className="hidden"
+                      id="detail-image-upload"
+                    />
+                    <label htmlFor="detail-image-upload" className="cursor-pointer">
+                      {selectedDetailImage ? (
+                        <div className="space-y-2">
+                          <img
+                            src={URL.createObjectURL(selectedDetailImage)}
+                            alt="상세 이미지 미리보기"
+                            className="w-32 h-20 object-cover mx-auto rounded-lg"
+                          />
+                          <p className="text-sm font-medium text-green-600">✅ 상세 이미지 선택됨</p>
+                          <p className="text-xs text-gray-500">{selectedDetailImage.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDetailImage(null)}
+                            className="text-xs text-red-600 hover:text-red-800 underline"
+                          >
+                            이미지 제거
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600">상세 페이지 이미지 업로드</p>
+                          <p className="text-xs text-gray-500 mt-1">최대 5MB, JPG/PNG 형식</p>
                         </div>
                       )}
                     </label>
