@@ -74,6 +74,7 @@ export default function EbookManagementPage() {
     category: '프로그래밍',
     price: 0,
     is_free: true,
+    status: 'draft',
     tags: [] as string[]
   })
   const [newTag, setNewTag] = useState('')
@@ -217,6 +218,7 @@ export default function EbookManagementPage() {
       formData.append('category', uploadForm.category)
       formData.append('price', uploadForm.price.toString())
       formData.append('is_free', uploadForm.is_free.toString())
+      formData.append('status', uploadForm.status)
       formData.append('tags', JSON.stringify(uploadForm.tags))
       formData.append('file', selectedFile)
       
@@ -259,15 +261,16 @@ export default function EbookManagementPage() {
         console.log('전자책 업로드 성공:', data)
         
         setShowUploadModal(false)
-        setUploadForm({
-          title: '',
-          description: '',
-          author: '',
-          category: '프로그래밍',
-          price: 0,
-          is_free: true,
-          tags: []
-        })
+      setUploadForm({
+        title: '',
+        description: '',
+        author: '',
+        category: '프로그래밍',
+        price: 0,
+        is_free: true,
+        status: 'draft',
+        tags: []
+      })
         setNewTag('')
         setSelectedFile(null)
         setSelectedThumbnail(null)
@@ -640,7 +643,7 @@ export default function EbookManagementPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">전체</option>
-              <option value="published">발행됨</option>
+              <option value="published">발행</option>
               <option value="draft">초안</option>
               <option value="archived">보관됨</option>
             </select>
@@ -929,7 +932,7 @@ export default function EbookManagementPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="draft">초안</option>
-                      <option value="published">발행됨</option>
+                      <option value="published">발행</option>
                       <option value="archived">보관됨</option>
                     </select>
                   </div>
@@ -1045,6 +1048,18 @@ export default function EbookManagementPage() {
                       {categories.map(category => (
                         <option key={category} value={category}>{category}</option>
                       ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">상태</label>
+                    <select
+                      value={uploadForm.status}
+                      onChange={(e) => setUploadForm({...uploadForm, status: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="draft">초안</option>
+                      <option value="published">발행</option>
+                      <option value="archived">보관됨</option>
                     </select>
                   </div>
                   <div>

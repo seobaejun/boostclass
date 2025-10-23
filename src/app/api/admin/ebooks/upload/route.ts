@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const category = formData.get('category') as string
     const price = parseInt(formData.get('price') as string) || 0
     const is_free = formData.get('is_free') === 'true'
+    const status = formData.get('status') as string || 'draft'
     const tags = JSON.parse(formData.get('tags') as string || '[]')
     const file = formData.get('file') as File
     const thumbnailFile = formData.get('thumbnail') as File | null
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
       download_count: 0,
       price,
       is_free,
-      status: 'draft',
+      status,
       featured: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -10,6 +10,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     console.log('다운로드할 전자책 ID:', id)
     
+    // 사용자 인증 확인 (유료 전자책의 경우 필요)
+    let user = null
+    let authError = null
+    
+    // Authorization 헤더에서 토큰 추출 (있는 경우에만)
+    const authorization = request.headers.get('authorization')
+    if (authorization && authorization.startsWith('Bearer ')) {
+      const token = authorization.replace('Bearer ', '')
+      const authResult = await supabase.auth.getUser(token)
+      user = authResult.data.user
+      authError = authResult.error
+    }
+    
     // 전자책 정보 조회
     const { data: ebook, error } = await supabase
       .from('ebooks')
@@ -36,6 +49,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         success: false,
         error: '전자책을 찾을 수 없습니다.'
       }, { status: 404 })
+    }
+
+    // 유료 전자책인 경우 구매 확인
+    if (!ebook.is_free) {
+      if (authError || !user) {
+        return NextResponse.json({ 
+          success: false, 
+          error: '로그인이 필요합니다.' 
+        }, { status: 401 })
+      }
+
+      // 구매 내역 확인
+      const { data: purchase, error: purchaseError } = await supabase
+        .from('ebook_purchases')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('ebook_id', id)
+        .eq('status', 'completed')
+        .single()
+
+      if (purchaseError || !purchase) {
+        console.log('구매 내역 없음:', { userId: user.id, ebookId: id })
+        return NextResponse.json({
+          success: false,
+          error: '구매하지 않은 전자책입니다. 먼저 구매해주세요.'
+        }, { status: 403 })
+      }
+      
+      console.log('구매 확인 완료:', purchase.id)
     }
     
     console.log('전자책 정보:', { title: ebook.title, file_path: ebook.file_path })
