@@ -7,22 +7,19 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-xl font-bold text-blue-400 mb-4">잘파는클래스</h3>
-            <p className="text-gray-300 mb-4">
-              최고의 온라인 강의 플랫폼으로 여러분의 성장을 도와드립니다.
-              전문가들이 제작한 고품질 강의를 만나보세요.
+            <h3 className="text-xl font-bold text-blue-400 mb-4">부학당</h3>
+            <p className="text-gray-300 text-sm mb-2">
+              회사명 : 잘파는 연구소 ｜ 대표자 : 김해준 ｜ 연락처 : 010-9068-9982
             </p>
-            <div className="flex space-x-4">
-              <Link href="#" className="text-gray-400 hover:text-blue-400">
-                Facebook
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-blue-400">
-                Twitter
-              </Link>
-              <Link href="#" className="text-gray-400 hover:text-blue-400">
-                Instagram
-              </Link>
-            </div>
+            <p className="text-gray-300 text-sm mb-2">
+              사업자등록번호 : 653-61-00668 ｜ 통신판매신고번호 : 제2025-경기 김포-3605호
+            </p>
+            <p className="text-gray-300 text-sm mb-2">
+              주소 : 경기도 김포시 김포한강8로 398, 302호 a279 3층(구래동)
+            </p>
+            <p className="text-gray-300 text-sm">
+              개인정보보호 최고 책임자 : 김해준 ｜ 담당자 메일 : sellinglaboratory2025@gmail.com
+            </p>
           </div>
 
           {/* Quick Links */}
@@ -30,13 +27,18 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">빠른 링크</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/courses" className="text-gray-300 hover:text-blue-400">
-                  강의 목록
+                <Link href="/about" className="text-gray-300 hover:text-blue-400">
+                  회사소개
                 </Link>
               </li>
               <li>
-                <Link href="/categories" className="text-gray-300 hover:text-blue-400">
-                  카테고리
+                <Link href="/courses" className="text-gray-300 hover:text-blue-400">
+                  클래스
+                </Link>
+              </li>
+              <li>
+                <Link href="/ebooks" className="text-gray-300 hover:text-blue-400">
+                  전자책
                 </Link>
               </li>
               <li>
@@ -45,13 +47,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-blue-400">
-                  회사 소개
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-300 hover:text-blue-400">
-                  문의하기
+                <Link href="/notices" className="text-gray-300 hover:text-blue-400">
+                  공지사항
                 </Link>
               </li>
             </ul>
@@ -62,13 +59,8 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">고객 지원</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/help" className="text-gray-300 hover:text-blue-400">
-                  도움말
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-gray-300 hover:text-blue-400">
-                  자주 묻는 질문
+                <Link href="/terms" className="text-gray-300 hover:text-blue-400">
+                  이용약관
                 </Link>
               </li>
               <li>
@@ -77,8 +69,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-300 hover:text-blue-400">
-                  이용약관
+                <Link href="/refund" className="text-gray-300 hover:text-blue-400">
+                  환불정책
                 </Link>
               </li>
             </ul>
@@ -86,9 +78,9 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-400">
-            © 2024 잘파는클래스. 모든 권리 보유.
-          </p>
+            <p className="text-gray-400">
+              © 2025 부학당. 모든 권리 보유.
+            </p>
         </div>
       </div>
     </footer>
