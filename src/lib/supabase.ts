@@ -4,25 +4,18 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// 환경 변수 검증 및 설정
+// 환경 변수 검증 및 설정 (서버 사이드에서도 안전하게 처리)
 if (!supabaseUrl || !supabaseKey) {
-  console.error('⚠️ Supabase 환경 변수가 설정되지 않았습니다.')
-  console.error('다음 환경 변수를 .env.local 파일에 설정해주세요:')
-  console.error('- NEXT_PUBLIC_SUPABASE_URL')
-  console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  console.error('- SUPABASE_SERVICE_ROLE_KEY (선택사항)')
-  
-  // 개발 환경에서는 더미 값으로 계속 진행 (에러 방지)
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('⚠️ 개발 환경: 더미 값으로 계속 진행합니다.')
+  // 서버 사이드에서는 에러를 던지지 않고 경고만 출력
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ [서버] Supabase 환경 변수가 설정되지 않았습니다.')
+    console.warn('⚠️ [서버] .env.local 파일을 확인해주세요.')
   } else {
-    throw new Error(
-      '⚠️ Supabase 환경 변수가 설정되지 않았습니다.\n' +
-      '다음 환경 변수를 .env.local 파일에 설정해주세요:\n' +
-      '- NEXT_PUBLIC_SUPABASE_URL\n' +
-      '- NEXT_PUBLIC_SUPABASE_ANON_KEY\n' +
-      '- SUPABASE_SERVICE_ROLE_KEY (선택사항)'
-    )
+    console.error('⚠️ [클라이언트] Supabase 환경 변수가 설정되지 않았습니다.')
+    console.error('다음 환경 변수를 .env.local 파일에 설정해주세요:')
+    console.error('- NEXT_PUBLIC_SUPABASE_URL')
+    console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    console.error('- SUPABASE_SERVICE_ROLE_KEY (선택사항)')
   }
 }
 
