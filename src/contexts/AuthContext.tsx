@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface User {
@@ -22,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const isInitialLoadRef = useRef(true)
 
   useEffect(() => {
     // Supabase 세션 상태 확인
@@ -46,26 +47,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem('userEmail')
           }
         }
-        setLoading(false)
+        
+        // 초기 로딩 완료 후에는 loading 상태를 변경하지 않음
+        if (isInitialLoadRef.current) {
+          setLoading(false)
+          isInitialLoadRef.current = false
+        }
       }
     )
 
-    // 초기 세션 확인
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const userData = {
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata?.name || session.user.email!,
+    // 초기 세션 확인 - 에러 발생 시에도 loading을 false로 설정
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('❌ 세션 확인 오류:', error.message)
+          setLoading(false)
+          isInitialLoadRef.current = false
+          return
         }
-        setUser(userData)
-        // localStorage에 이메일 저장 (관리자 권한 확인용)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('userEmail', session.user.email!)
+        
+        if (session?.user) {
+          const userData = {
+            id: session.user.id,
+            email: session.user.email!,
+            name: session.user.user_metadata?.name || session.user.email!,
+          }
+          setUser(userData)
+          // localStorage에 이메일 저장 (관리자 권한 확인용)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('userEmail', session.user.email!)
+          }
         }
-      }
-      setLoading(false)
-    })
+        setLoading(false)
+        isInitialLoadRef.current = false
+      })
+      .catch((error) => {
+        console.error('❌ 세션 확인 실패:', error)
+        setLoading(false)
+        isInitialLoadRef.current = false
+      })
 
     return () => subscription.unsubscribe()
   }, [])

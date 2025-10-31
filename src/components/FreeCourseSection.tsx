@@ -15,8 +15,10 @@ interface Course {
   level: string
   category: {
     name: string
-  }
-  _count: {
+  } | string
+  thumbnail_url?: string
+  detail_image_url?: string
+  _count?: {
     lessons: number
     purchases: number
   }
@@ -131,7 +133,7 @@ export default function FreeCourseSection() {
                   ? `translateX(-${currentIndex * (100 / Math.max(1, slidesToShow))}%)`
                   : 'translateX(0)',
                 width: freeCourses.length > 0 && slidesToShow > 0
-                  ? `${Math.max(100, (freeCourses.length / Math.min(slidesToShow, freeCourses.length)) * 100)}%`
+                  ? `${Math.max(100, (freeCourses.length / Math.max(1, Math.min(slidesToShow, freeCourses.length))) * 100)}%`
                   : '100%'
               }}
             >
@@ -159,11 +161,11 @@ export default function FreeCourseSection() {
                   </div>
                 ))
               ) : (
-                freeCourses.map((course, index) => (
+                freeCourses.length > 0 && freeCourses.map((course, index) => (
                   <div
                     key={course.id}
                     className="px-3"
-                    style={{ width: `${100 / freeCourses.length}%` }}
+                    style={{ width: `${100 / Math.max(1, freeCourses.length)}%` }}
                   >
                     <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 h-[500px] flex flex-col border-2 border-blue-200 group">
                         {/* Course Image - 클릭 가능 */}
@@ -205,7 +207,7 @@ export default function FreeCourseSection() {
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
-                                {course.category?.name || '무료강의'}
+                                {typeof course.category === 'string' ? course.category : (course.category?.name || '무료강의')}
                               </span>
                               <div className="flex items-center text-xs text-gray-500">
                                 <Star className="w-3 h-3 text-yellow-400 mr-1" />

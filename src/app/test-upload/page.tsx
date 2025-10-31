@@ -33,7 +33,9 @@ export default function TestUploadPage() {
       
     } catch (error) {
       console.error('❌ 테스트 오류:', error)
-      setResult({ error: error.message })
+      setResult({ 
+        error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' 
+      })
     } finally {
       setLoading(false)
     }

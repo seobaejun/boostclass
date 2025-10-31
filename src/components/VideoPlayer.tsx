@@ -17,7 +17,7 @@ export default function VideoPlayer({
   onEnded,
   initialTime = 0,
 }: VideoPlayerProps) {
-  const playerRef = useRef<ReactPlayer>(null)
+  const playerRef = useRef<ReactPlayer | null>(null)
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
