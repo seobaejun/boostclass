@@ -17,7 +17,7 @@ export default function VideoPlayer({
   onEnded,
   initialTime = 0,
 }: VideoPlayerProps) {
-  const playerRef = useRef<React.ElementRef<typeof ReactPlayer> | null>(null)
+  const playerRef = useRef<ReactPlayer | null>(null)
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
@@ -26,7 +26,7 @@ export default function VideoPlayer({
   const [playbackRate, setPlaybackRate] = useState(1)
   const [showControls, setShowControls] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>()
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   useEffect(() => {
     if (initialTime > 0 && playerRef.current) {

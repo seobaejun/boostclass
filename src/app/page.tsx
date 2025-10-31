@@ -2,13 +2,22 @@
 
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
-import HeroSlider from '@/components/HeroSlider'
 import { Play, Star, Users, FileText, Calendar, Gift, Award, TrendingUp, UserPlus, Bell } from 'lucide-react'
 
-// 동적 import로 지연 로딩 (초기 로딩 속도 개선)
+// 모든 컴포넌트를 동적 import로 변경 (Vercel 배포 시 무한 로딩 문제 해결)
 // ssr: false로 설정하여 클라이언트에서만 렌더링 (이벤트 핸들러 사용 시 필요)
+const Header = dynamic(() => import('@/components/Header'), {
+  ssr: false
+})
+
+const Footer = dynamic(() => import('@/components/Footer'), {
+  ssr: false
+})
+
+const HeroSlider = dynamic(() => import('@/components/HeroSlider'), {
+  ssr: false
+})
+
 const FreeCourseSection = dynamic(() => import('@/components/FreeCourseSection'), {
   loading: () => <div className="py-16"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="animate-pulse"><div className="h-8 bg-gray-200 rounded w-64 mb-4"></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div></div></div></div></div>,
   ssr: false

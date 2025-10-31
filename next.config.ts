@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
     // TypeScript 에러가 있어도 빌드는 계속 진행 (배포용)
     ignoreBuildErrors: false,
   },
+  // Next.js 15 서버/클라이언트 컴포넌트 경계 명확화
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
   images: {
     remotePatterns: [
       {
