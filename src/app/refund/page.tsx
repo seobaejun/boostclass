@@ -23,7 +23,7 @@ export default function RefundPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">제1조 (환불 원칙)</h2>
             <p className="text-gray-700 leading-relaxed">
-              부학당은 전자상거래법 및 소비자기본법에 따라 구매자의 환불 요청을 처리합니다. 
+              부스트클래스는 전자상거래법 및 소비자기본법에 따라 구매자의 환불 요청을 처리합니다. 
               단, 디지털 콘텐츠의 특성상 일정 기준을 적용합니다.
             </p>
           </section>
@@ -94,14 +94,14 @@ export default function RefundPage() {
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-900 mb-2">고객센터 안내</h3>
             <div className="text-blue-800 space-y-1">
-              <p>이메일: sellinglaboratory2025@gmail.com</p>
-              <p>연락처: 010-9068-9982</p>
+              <p>이메일: sprince1004@naver.com</p>
+              <p>연락처: 010-3673-6942</p>
               <p>운영시간: 평일 09:00 - 18:00</p>
             </div>
           </div>
 
                  <div className="text-sm text-gray-500 mt-8 pt-6 border-t">
-                   <p>부학당 | 대표자: 김해준</p>
+                   <p>부스트클래스 | 대표자: 서배준</p>
                  </div>
         </div>
       </div>

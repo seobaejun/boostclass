@@ -11,13 +11,13 @@ export default function InstructorApplyPage() {
       <section className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            부학당 강사가 되어보세요
+            부스트클래스 강사가 되어보세요
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-blue-100">
             당신의 전문 지식으로 많은 사람들의 성공을 도와주세요
           </p>
           <p className="text-lg text-blue-100 max-w-3xl mx-auto">
-            검증된 노하우와 실무 경험을 가진 전문가라면 누구나 부학당 강사가 될 수 있습니다.
+            검증된 노하우와 실무 경험을 가진 전문가라면 누구나 부스트클래스 강사가 될 수 있습니다.
           </p>
         </div>
       </section>

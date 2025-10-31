@@ -4,6 +4,18 @@ import { createClient } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     console.log('📤 이미지 업로드 API 시작')
+    
+    // 서비스 키 확인
+    const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    console.log('🔑 서비스 키 확인:', { 
+      hasServiceKey,
+      keyPrefix: hasServiceKey ? process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) + '...' : '없음'
+    })
+    
+    if (!hasServiceKey) {
+      console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다. RLS 정책으로 인해 업로드가 실패할 수 있습니다.')
+    }
+    
     const supabase = createClient();
     const formData = await request.formData();
     const file = formData.get('file');
@@ -40,6 +52,23 @@ export async function POST(request: Request) {
     console.log('🪣 업로드 버킷:', bucket)
     console.log('📁 파일명:', fileName)
     
+    // 버킷 존재 확인
+    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
+    console.log('🪣 사용 가능한 버킷 목록:', buckets?.map(b => b.name))
+    
+    if (bucketError) {
+      console.error('❌ 버킷 목록 조회 실패:', bucketError)
+    }
+    
+    const bucketExists = buckets?.some(b => b.name === bucket)
+    if (!bucketExists) {
+      console.error(`❌ ${bucket} 버킷이 존재하지 않습니다.`)
+      return NextResponse.json({ 
+        success: false, 
+        error: `${bucket} 버킷이 존재하지 않습니다. Supabase에서 버킷을 생성해주세요.` 
+      }, { status: 500 });
+    }
+    
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(fileName, fileData, {
@@ -50,7 +79,18 @@ export async function POST(request: Request) {
     console.log('📤 업로드 결과:', { data, error })
     
     if (error) {
-      console.error('❌ 업로드 실패:', error)
+      console.error('❌ 업로드 실패:', {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error.error
+      })
+      // 버킷이 없을 가능성 체크
+      if (error.message?.includes('bucket') || error.message?.includes('not found')) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `${bucket} 버킷이 존재하지 않습니다. Supabase에서 버킷을 생성해주세요.` 
+        }, { status: 500 });
+      }
       return NextResponse.json({ success: false, error: `파일 업로드에 실패했습니다: ${error.message}` }, { status: 500 });
     }
 

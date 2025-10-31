@@ -38,58 +38,15 @@ export default function ScheduleSection() {
         const response = await fetch('/api/courses?category=무료강의&limit=4')
         const data = await response.json()
         
-        if (data.success) {
-          setFreeCourses(data.data.courses)
+        if (data.success && data.data?.courses) {
+          setFreeCourses(data.data.courses || [])
+        } else {
+          setFreeCourses([])
         }
       } catch (error) {
         console.error('무료강의 로드 실패:', error)
-        // API 실패 시 더미 데이터 사용
-        setFreeCourses([
-          {
-            id: 'course-1',
-            title: 'AI 사진작가로 월300 버는 무료강의',
-            description: 'AI 기술을 활용한 사진작가로 월 300만원을 벌 수 있는 실전 노하우를 무료로 배워보세요.',
-            price: 0,
-            level: 'beginner',
-            duration: '90분',
-            students: 1234,
-            rating: 4.8,
-            category: { name: '무료강의' }
-          },
-          {
-            id: 'course-2',
-            title: '초보자도 추가 월급 벌기 무료강의',
-            description: '초보자도 쉽게 따라할 수 있는 부업 노하우를 무료로 배워보세요.',
-            price: 0,
-            level: 'beginner',
-            duration: '120분',
-            students: 856,
-            rating: 4.6,
-            category: { name: '무료강의' }
-          },
-          {
-            id: 'course-3',
-            title: 'AI쿠팡로켓 수익화 무료강의',
-            description: 'AI를 활용한 쿠팡로켓 수익화 전략을 무료로 배워보세요.',
-            price: 0,
-            level: 'intermediate',
-            duration: '150분',
-            students: 642,
-            rating: 4.7,
-            category: { name: '무료강의' }
-          },
-          {
-            id: 'course-4',
-            title: '유튜브 멱살캐리 무료특강',
-            description: '유튜브로 수익을 내는 실전 노하우를 무료로 배워보세요.',
-            price: 0,
-            level: 'intermediate',
-            duration: '180분',
-            students: 423,
-            rating: 4.5,
-            category: { name: '무료강의' }
-          }
-        ])
+        // 더미 데이터 제거 - 빈 배열 반환
+        setFreeCourses([])
       } finally {
         setLoading(false)
       }

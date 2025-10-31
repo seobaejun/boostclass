@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || ''
 
     console.log('📊 쿼리 파라미터:', { page, limit, search, role, status })
+
+    // 서비스 키를 사용한 Supabase 클라이언트 (RLS 우회)
+    const supabase = createClient()
 
     // user_profiles 테이블에서 사용자 데이터 조회
     let query = supabase
@@ -53,183 +56,43 @@ export async function GET(request: NextRequest) {
       console.error('❌ 사용자 데이터 조회 오류:', error.message)
       console.error('오류 코드:', error.code)
       console.error('오류 세부사항:', error.details)
+      console.error('오류 힌트:', error.hint)
       
-      // user_profiles 테이블이 없는 경우 더미 데이터 반환
+      // user_profiles 테이블이 없는 경우 에러 반환
       if (error.code === 'PGRST116' || error.message.includes('relation "user_profiles" does not exist')) {
-        console.log('⚠️ user_profiles 테이블이 없습니다. 더미 데이터를 반환합니다.')
-        
-        const dummyUsers = [
-          {
-            id: '1',
-            email: 'admin@example.com',
-            name: '관리자',
-            full_name: '관리자',
-            role: 'admin',
-            is_active: true,
-            created_at: new Date().toISOString(),
-            last_login_at: new Date().toISOString(),
-            avatar_url: null,
-            phone: null,
-            bio: null,
-            location: null,
-            website: null,
-            social_links: {},
-            preferences: {}
+        console.error('❌ user_profiles 테이블이 존재하지 않습니다.')
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'user_profiles 테이블이 존재하지 않습니다. 데이터베이스 마이그레이션을 실행해주세요.',
+            code: error.code 
           },
-          {
-            id: '2',
-            email: 'user1@example.com',
-            name: '김철수',
-            full_name: '김철수',
-            role: 'user',
-            is_active: true,
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            last_login_at: new Date(Date.now() - 3600000).toISOString(),
-            avatar_url: null,
-            phone: null,
-            bio: null,
-            location: null,
-            website: null,
-            social_links: {},
-            preferences: {}
-          },
-          {
-            id: '3',
-            email: 'user2@example.com',
-            name: '이영희',
-            full_name: '이영희',
-            role: 'user',
-            is_active: true,
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-            last_login_at: new Date(Date.now() - 7200000).toISOString(),
-            avatar_url: null,
-            phone: null,
-            bio: null,
-            location: null,
-            website: null,
-            social_links: {},
-            preferences: {}
-          }
-        ]
-
-        // 더미 데이터도 올바른 형식으로 변환
-        const formattedDummyUsers = dummyUsers.map(user => ({
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          avatar_url: user.avatar_url,
-          role: user.role,
-          is_active: user.is_active,
-          created_at: user.created_at,
-          last_login: user.last_login_at,
-          phone: user.phone,
-          bio: user.bio,
-          location: user.location,
-          website: user.website,
-          social_links: user.social_links,
-          preferences: user.preferences
-        }))
-
-        return NextResponse.json({
-          success: true,
-          users: formattedDummyUsers,
-          total: formattedDummyUsers.length,
-          page: 1,
-          totalPages: 1
-        })
+          { status: 500 }
+        )
       }
 
       return NextResponse.json(
-        { success: false, error: '사용자 데이터를 불러오는 중 오류가 발생했습니다.' },
+        { 
+          success: false, 
+          error: '사용자 데이터를 불러오는 중 오류가 발생했습니다.',
+          message: error.message,
+          code: error.code 
+        },
         { status: 500 }
       )
     }
 
     console.log('✅ 사용자 데이터 조회 성공:', { count: count || 0, users: users?.length || 0 })
-    console.log('📊 실제 사용자 데이터 샘플:', users?.[0])
     
-    // 실제 데이터가 없는 경우 더미 데이터 사용
+    // 실제 데이터가 없는 경우 빈 배열 반환
     if (!users || users.length === 0) {
-      console.log('⚠️ 실제 사용자 데이터가 없습니다. 더미 데이터를 반환합니다.')
-      
-      const dummyUsers = [
-        {
-          id: '1',
-          email: 'admin@example.com',
-          name: '관리자',
-          full_name: '관리자',
-          role: 'admin',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          last_login_at: new Date().toISOString(),
-          avatar_url: null,
-          phone: null,
-          bio: null,
-          location: null,
-          website: null,
-          social_links: {},
-          preferences: {}
-        },
-        {
-          id: '2',
-          email: 'user1@example.com',
-          name: '김철수',
-          full_name: '김철수',
-          role: 'user',
-          is_active: true,
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          last_login_at: new Date(Date.now() - 3600000).toISOString(),
-          avatar_url: null,
-          phone: null,
-          bio: null,
-          location: null,
-          website: null,
-          social_links: {},
-          preferences: {}
-        },
-        {
-          id: '3',
-          email: 'user2@example.com',
-          name: '이영희',
-          full_name: '이영희',
-          role: 'user',
-          is_active: true,
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          last_login_at: new Date(Date.now() - 7200000).toISOString(),
-          avatar_url: null,
-          phone: null,
-          bio: null,
-          location: null,
-          website: null,
-          social_links: {},
-          preferences: {}
-        }
-      ]
-
-      // 더미 데이터도 올바른 형식으로 변환
-      const formattedDummyUsers = dummyUsers.map(user => ({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        avatar_url: user.avatar_url,
-        role: user.role,
-        is_active: user.is_active,
-        created_at: user.created_at,
-        last_login: user.last_login_at,
-        phone: user.phone,
-        bio: user.bio,
-        location: user.location,
-        website: user.website,
-        social_links: user.social_links,
-        preferences: user.preferences
-      }))
-
+      console.log('📭 사용자 데이터가 없습니다. 빈 배열을 반환합니다.')
       return NextResponse.json({
         success: true,
-        users: formattedDummyUsers,
-        total: formattedDummyUsers.length,
-        page: 1,
-        totalPages: 1
+        users: [],
+        total: 0,
+        page,
+        totalPages: 0
       })
     }
 
@@ -291,6 +154,9 @@ export async function PUT(request: NextRequest) {
 
     console.log('📝 사용자 정보 업데이트:', { userId, updates })
     
+    // 서비스 키를 사용한 Supabase 클라이언트 (RLS 우회)
+    const supabase = createClient()
+    
     // 사용자 정보 업데이트
     const { data, error } = await supabase
       .from('user_profiles')
@@ -348,6 +214,9 @@ export async function DELETE(request: NextRequest) {
 
     // 임시로 관리자 권한 확인을 우회 (개발 단계)
     console.log('⚠️ 개발 단계: 관리자 권한 확인을 우회합니다.')
+
+    // 서비스 키를 사용한 Supabase 클라이언트 (RLS 우회)
+    const supabase = createClient()
 
     // 사용자 삭제 (실제로는 비활성화)
     const { error } = await supabase

@@ -58,7 +58,7 @@ export default function InstructorsPage() {
       <section className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            부학당 강사진
+            부스트클래스 강사진
           </h1>
           <p className="text-xl mb-8 text-blue-100">
             각 분야 최고의 전문가들이 여러분의 성공을 도와드립니다

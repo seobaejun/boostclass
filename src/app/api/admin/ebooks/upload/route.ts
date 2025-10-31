@@ -170,8 +170,25 @@ export async function POST(request: NextRequest) {
     
     if (detailImageFile) {
       console.log('🖼️ 상세 이미지 업로드 시작...')
+      console.log('📦 상세 이미지 파일 정보:', {
+        name: detailImageFile.name,
+        size: detailImageFile.size,
+        type: detailImageFile.type
+      })
+      
       const detailImageBuffer = await detailImageFile.arrayBuffer()
       const detailImageFileName = `${ebookId}_detail_${Date.now()}.${detailImageFile.name.split('.').pop()}`
+      
+      console.log('🪣 업로드 버킷: ebook-details')
+      console.log('📁 파일명:', detailImageFileName)
+      
+      // 버킷 존재 확인
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
+      console.log('🪣 사용 가능한 버킷 목록:', buckets?.map(b => b.name))
+      
+      if (bucketError) {
+        console.error('❌ 버킷 목록 조회 실패:', bucketError)
+      }
       
       const { data: detailImageUploadData, error: detailImageUploadError } = await supabase.storage
         .from('ebook-details')
@@ -181,7 +198,15 @@ export async function POST(request: NextRequest) {
         })
       
       if (detailImageUploadError) {
-        console.error('상세 이미지 업로드 오류:', detailImageUploadError)
+        console.error('❌ 상세 이미지 업로드 오류:', {
+          message: detailImageUploadError.message,
+          statusCode: detailImageUploadError.statusCode,
+          error: detailImageUploadError.error
+        })
+        // 버킷이 없을 가능성이 높으므로 에러 정보를 상세히 로깅
+        if (detailImageUploadError.message?.includes('bucket') || detailImageUploadError.message?.includes('not found')) {
+          console.error('⚠️ ebook-details 버킷이 존재하지 않을 수 있습니다. setup-ebook-details-bucket.sql을 실행해주세요.')
+        }
       } else {
         console.log('✅ 상세 이미지 업로드 성공:', detailImageUploadData)
         // 공개 URL 생성
@@ -189,6 +214,7 @@ export async function POST(request: NextRequest) {
           .from('ebook-details')
           .getPublicUrl(detailImageUploadData.path)
         detailImageUrl = detailImagePublicData.publicUrl
+        console.log('🔗 상세 이미지 공개 URL:', detailImageUrl)
       }
     }
     

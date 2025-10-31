@@ -68,18 +68,44 @@ export default function CourseForm({ mode, initialData, onSubmit, loading, onCan
 
   const handleImageUpload = async (file: File, type: 'thumbnail' | 'detail') => {
     try {
+      console.log('📤 이미지 업로드 시작:', { fileName: file.name, fileSize: file.size, fileType: file.type, type })
+      
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
+
+      console.log('📡 업로드 API 호출 시작...')
       const response = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData
       });
+
+      console.log('📡 업로드 응답 상태:', response.status, response.statusText)
+      
       const data = await response.json();
-      if (!response.ok || !data.success || !data.url) throw new Error(data.error || '이미지 업로드 실패');
+      console.log('📦 업로드 응답 데이터:', data);
+
+      if (!response.ok) {
+        const errorMessage = data.error || `HTTP 오류: ${response.status}`
+        console.error('❌ 업로드 실패:', errorMessage)
+        setError(`이미지 업로드 실패: ${errorMessage}`)
+        return ''; // 오류 발생 시 빈 문자열 반환
+      }
+
+      if (!data.success || !data.url) {
+        const errorMessage = data.error || '이미지 업로드 실패'
+        console.error('❌ 업로드 실패:', errorMessage)
+        setError(`이미지 업로드 실패: ${errorMessage}`)
+        return ''; // 오류 발생 시 빈 문자열 반환
+      }
+
+      console.log('✅ 이미지 업로드 성공:', data.url)
+      setError(null) // 성공 시 에러 초기화
       return data.url; // 업로드된 URL을 반환
     } catch (err: any) {
-      setError(err?.message || '이미지 업로드 중 오류');
+      console.error('❌ 이미지 업로드 예외 발생:', err)
+      const errorMessage = err?.message || '이미지 업로드 중 알 수 없는 오류가 발생했습니다.'
+      setError(errorMessage)
       return ''; // 오류 발생 시 빈 문자열 반환
     }
   };
@@ -364,6 +390,13 @@ export default function CourseForm({ mode, initialData, onSubmit, loading, onCan
           )}
         </div>
       </div>
+      {/* 에러 메시지 표시 */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+      
       {/* 버튼 영역 */}
       <div className="flex justify-end gap-2 mt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 rounded bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200">취소</button>

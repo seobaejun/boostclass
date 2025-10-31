@@ -7,18 +7,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-xl font-bold text-blue-400 mb-4">부학당</h3>
+            <h3 className="text-xl font-bold text-blue-400 mb-4">부스트클래스</h3>
             <p className="text-gray-300 text-sm mb-2">
-              회사명 : 잘파는 연구소 ｜ 대표자 : 김해준 ｜ 연락처 : 010-9068-9982
+              회사명 : 부스트웹 ｜ 대표자 : 서배준 ｜ 연락처 : 010-3673-6942
             </p>
             <p className="text-gray-300 text-sm mb-2">
-              사업자등록번호 : 653-61-00668 ｜ 통신판매신고번호 : 제2025-경기 김포-3605호
+              사업자등록번호 : 152-74-00452 ｜ 통신판매신고번호 : 제2024-충남천안-2840호
             </p>
             <p className="text-gray-300 text-sm mb-2">
-              주소 : 경기도 김포시 김포한강8로 398, 302호 a279 3층(구래동)
+              주소 : 충청남도 천안시 서북구 월봉로 126, 901-17호(쌍용동, 대림프라자)
             </p>
             <p className="text-gray-300 text-sm">
-              개인정보보호 최고 책임자 : 김해준 ｜ 담당자 메일 : sellinglaboratory2025@gmail.com
+              개인정보보호 최고 책임자 : 서배준 ｜ 담당자 메일 : sprince1004@naver.com
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
             <p className="text-gray-400">
-              © 2025 부학당. 모든 권리 보유.
+              © 2025 부스트클래스. 모든 권리 보유.
             </p>
         </div>
       </div>

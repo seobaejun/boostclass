@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">제1조 (개인정보의 처리목적)</h2>
             <p className="text-gray-700 leading-relaxed">
-              부학당(이하 "회사")는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보보호법 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.
+              부스트클래스(이하 "회사")는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보보호법 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.
             </p>
             <div className="mt-4 space-y-2">
               <p className="text-gray-700">1. 회원 가입 및 관리</p>
@@ -123,9 +123,9 @@ export default function PrivacyPage() {
             <div className="text-gray-700 leading-relaxed space-y-2">
               <p>회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보보호책임자를 지정하고 있습니다:</p>
               <div className="mt-4 p-4 bg-gray-50 rounded">
-                <p><strong>개인정보보호책임자:</strong> 김해준</p>
-                <p><strong>연락처:</strong> 010-9068-9982</p>
-                <p><strong>이메일:</strong> sellinglaboratory2025@gmail.com</p>
+                <p><strong>개인정보보호책임자:</strong> 서배준</p>
+                <p><strong>연락처:</strong> 010-3673-6942</p>
+                <p><strong>이메일:</strong> sprince1004@naver.com</p>
               </div>
             </div>
           </section>
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
           </section>
 
                  <div className="text-sm text-gray-500 mt-8 pt-6 border-t">
-                   <p>부학당 | 대표자: 김해준</p>
+                   <p>부스트클래스 | 대표자: 서배준</p>
                  </div>
         </div>
       </div>

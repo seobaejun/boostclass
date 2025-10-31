@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">제1조 (목적)</h2>
             <p className="text-gray-700 leading-relaxed">
-              본 약관은 부학당(이하 "회사")가 제공하는 온라인 강의 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+              본 약관은 부스트클래스(이하 "회사")가 제공하는 온라인 강의 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
             </p>
           </section>
 
@@ -108,7 +108,7 @@ export default function TermsPage() {
           </section>
 
                  <div className="text-sm text-gray-500 mt-8 pt-6 border-t">
-                   <p>부학당 | 대표자: 김해준</p>
+                   <p>부스트클래스 | 대표자: 서배준</p>
                  </div>
         </div>
       </div>

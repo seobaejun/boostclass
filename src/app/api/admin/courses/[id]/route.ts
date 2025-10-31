@@ -32,9 +32,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   };
 
   // 기타 null/빈 값 처리
-  if (payload.category_id === '' || payload.category_id === null || payload.category_id === undefined) {
-    updateFields.category_id = null;
-  }
+  // category_id는 사용하지 않음 (category 필드를 TEXT로 직접 사용)
   if (payload.tags === '' || payload.tags === null || payload.tags === undefined) {
     updateFields.tags = [];
   }

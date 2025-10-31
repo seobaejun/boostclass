@@ -45,74 +45,17 @@ export default function FreeCourseSection() {
         
         console.log('API Response:', data) // 디버깅용
         
-        if (data.success) {
-          setFreeCourses(data.data.courses)
+        if (data.success && data.data?.courses) {
+          setFreeCourses(data.data.courses || [])
         } else {
-          console.error('API Error:', data.error)
-          // 임시 하드코딩된 데이터 사용
-          setFreeCourses([
-            {
-              id: 'course-1',
-              title: '[파파준스] 나만의 AI 사진작가로 월300 버는 올인원 무료강의',
-              description: 'AI 기술을 활용한 사진작가로 월 300만원을 벌 수 있는 실전 노하우를 무료로 배워보세요.',
-              price: 0,
-              original_price: 199000,
-              duration: 90,
-              level: 'beginner',
-              category: { name: '무료강의' },
-              _count: { lessons: 3, purchases: 1234 }
-            },
-            {
-              id: 'course-2',
-              title: '[내일은편하게] 0원으로 초보자도 추가 월급 벌기 무료강의',
-              description: '투자 없이도 시작할 수 있는 다양한 부업 방법을 배워보세요.',
-              price: 0,
-              original_price: 149000,
-              duration: 120,
-              level: 'beginner',
-              category: { name: '무료강의' },
-              _count: { lessons: 2, purchases: 987 }
-            },
-            {
-              id: 'course-3',
-              title: '[광마] 주부도 억대 매출 낸 AI쿠팡로켓 수익화 무료강의',
-              description: 'AI를 활용한 쿠팡로켓 수익화 방법을 배워보세요.',
-              price: 0,
-              original_price: 299000,
-              duration: 100,
-              level: 'beginner',
-              category: { name: '무료강의' },
-              _count: { lessons: 3, purchases: 2156 }
-            },
-            {
-              id: 'course-4',
-              title: '[홍시삼분] 노베이스 초보자도 가능! AI 자동화 해외구매대행 무료강의',
-              description: 'AI 자동화를 활용한 해외구매대행 사업을 시작해보세요.',
-              price: 0,
-              original_price: 179000,
-              duration: 110,
-              level: 'beginner',
-              category: { name: '무료강의' },
-              _count: { lessons: 3, purchases: 756 }
-            }
-          ])
+          console.error('API Error:', data.error || '데이터를 불러올 수 없습니다.')
+          // 더미 데이터 제거 - 빈 배열 반환
+          setFreeCourses([])
         }
       } catch (error) {
         console.error('Error fetching free courses:', error)
-        // 에러 시에도 하드코딩된 데이터 사용
-        setFreeCourses([
-          {
-            id: 'course-1',
-            title: '[파파준스] 나만의 AI 사진작가로 월300 버는 올인원 무료강의',
-            description: 'AI 기술을 활용한 사진작가로 월 300만원을 벌 수 있는 실전 노하우를 무료로 배워보세요.',
-            price: 0,
-            original_price: 199000,
-            duration: 90,
-            level: 'beginner',
-            category: { name: '무료강의' },
-            _count: { lessons: 3, purchases: 1234 }
-          }
-        ])
+        // 에러 시에도 더미 데이터 제거 - 빈 배열 반환
+        setFreeCourses([])
       } finally {
         setLoading(false)
       }
@@ -140,19 +83,28 @@ export default function FreeCourseSection() {
   }, [])
 
   useEffect(() => {
+    // freeCourses가 없거나 slidesToShow보다 적으면 타이머 설정하지 않음
+    if (freeCourses.length === 0 || freeCourses.length <= slidesToShow) {
+      return
+    }
+
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % (freeCourses.length - slidesToShow + 1))
     }, 4000)
 
     return () => clearInterval(timer)
-  }, [slidesToShow])
+  }, [freeCourses.length, slidesToShow])
 
   const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % (freeCourses.length - slidesToShow + 1))
+    if (freeCourses.length === 0 || freeCourses.length <= slidesToShow) return
+    const maxIndex = Math.max(1, freeCourses.length - slidesToShow + 1)
+    setCurrentIndex((prev) => (prev + 1) % maxIndex)
   }
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + (freeCourses.length - slidesToShow + 1)) % (freeCourses.length - slidesToShow + 1))
+    if (freeCourses.length === 0 || freeCourses.length <= slidesToShow) return
+    const maxIndex = Math.max(1, freeCourses.length - slidesToShow + 1)
+    setCurrentIndex((prev) => (prev - 1 + maxIndex) % maxIndex)
   }
 
   return (
@@ -174,8 +126,12 @@ export default function FreeCourseSection() {
             <div
               className="flex transition-transform duration-500 ease-in-out"
               style={{
-                transform: `translateX(-${currentIndex * (100 / slidesToShow)}%)`,
-                width: `${(freeCourses.length / slidesToShow) * 100}%`
+                transform: freeCourses.length > 0 && freeCourses.length > slidesToShow && slidesToShow > 0
+                  ? `translateX(-${currentIndex * (100 / Math.max(1, slidesToShow))}%)`
+                  : 'translateX(0)',
+                width: freeCourses.length > 0 && slidesToShow > 0
+                  ? `${Math.max(100, (freeCourses.length / Math.min(slidesToShow, freeCourses.length)) * 100)}%`
+                  : '100%'
               }}
             >
               {loading ? (
@@ -340,17 +296,26 @@ export default function FreeCourseSection() {
         </div>
 
         {/* Dots Indicator */}
-        <div className="flex justify-center mt-6 space-x-2">
-          {Array.from({ length: freeCourses.length - slidesToShow + 1 }, (_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
+        {freeCourses.length > 0 && freeCourses.length > slidesToShow && (
+          <div className="flex justify-center mt-6 space-x-2">
+            {Array.from({ length: Math.max(1, freeCourses.length - slidesToShow + 1) }, (_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* 데이터가 없을 때 메시지 */}
+        {!loading && freeCourses.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">등록된 무료강의가 없습니다.</p>
+          </div>
+        )}
       </div>
     </section>
   )

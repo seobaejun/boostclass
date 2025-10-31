@@ -51,12 +51,12 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="text-2xl font-bold text-gray-900">
-            부학당
+            부스트클래스
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex space-x-8">
-            {/* 부학당 Dropdown */}
+            {/* 부스트클래스 Dropdown */}
             <div 
               className="relative group"
               onMouseEnter={() => handleMouseEnter('titan')}
@@ -66,14 +66,13 @@ export default function Header() {
                 className="flex items-center text-gray-700 hover:text-blue-600 transition-colors"
                 onClick={() => toggleDropdown('titan')}
               >
-                부학당
+                부스트클래스
                 <ChevronDown className="w-4 h-4 ml-1" />
               </button>
               <div className={`absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border ${
                 activeDropdown === 'titan' ? 'block' : 'hidden'
               }`}>
                 <Link href="/about" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">회사소개</Link>
-                <Link href="/instructors" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">강사소개</Link>
                 <Link href="/instructor-apply" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">강사지원</Link>
               </div>
             </div>
@@ -159,10 +158,9 @@ export default function Header() {
           <div className="lg:hidden border-t border-gray-200 py-4">
             <div className="space-y-4">
               <div>
-                <div className="font-medium text-gray-900 mb-2">부학당</div>
+                <div className="font-medium text-gray-900 mb-2">부스트클래스</div>
                 <div className="pl-4 space-y-2">
                   <Link href="/about" className="block text-sm text-gray-600 hover:text-blue-600">회사소개</Link>
-                  <Link href="/instructors" className="block text-sm text-gray-600 hover:text-blue-600">강사소개</Link>
                   <Link href="/instructor-apply" className="block text-sm text-gray-600 hover:text-blue-600">강사지원</Link>
                 </div>
               </div>

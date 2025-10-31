@@ -11,7 +11,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            부학당
+            부스트클래스
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-blue-100">
             실무 전문가들과 함께하는 온라인 교육 플랫폼
@@ -107,58 +107,6 @@ export default function AboutPage() {
               <p className="text-gray-600">
                 단순한 지식 전달이 아닌, 실제 성과와 수익 창출을 목표로 합니다.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Company Info */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-12 text-white">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl font-bold mb-6">회사 정보</h2>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">회사명</h3>
-                    <p className="text-gray-300">주식회사 타이탄컴퍼니</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">대표이사</h3>
-                    <p className="text-gray-300">오윤록</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">사업자등록번호</h3>
-                    <p className="text-gray-300">409-86-55803</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">통신판매업신고번호</h3>
-                    <p className="text-gray-300">2025-서울강남-02444호</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-4">연락처</h3>
-                <div className="space-y-3">
-                  <div>
-                    <span className="font-medium">주소:</span>
-                    <p className="text-gray-300">서울특별시 강남구 선릉로 611, 2층 (논현동)</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">전화:</span>
-                    <p className="text-gray-300">070-4138-2146</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">이메일:</span>
-                    <p className="text-gray-300">titanclass@titanz.co.kr</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">고객센터:</span>
-                    <p className="text-gray-300">주중 10:00~18:00</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

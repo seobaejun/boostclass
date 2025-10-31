@@ -28,6 +28,76 @@ interface Ebook {
   file_path?: string
 }
 
+// 전자책 상세 이미지 컴포넌트
+function EbookDetailImage({ 
+  detailImageUrl, 
+  thumbnailUrl, 
+  coverImage, 
+  title 
+}: { 
+  detailImageUrl?: string
+  thumbnailUrl?: string
+  coverImage?: string
+  title: string
+}) {
+  const [imageError, setImageError] = useState(false)
+  const [currentImageSrc, setCurrentImageSrc] = useState<string | null>(null)
+
+  // detail_image_url이 유효한 URL인지 확인 (빈 문자열 체크 포함)
+  const isValidDetailImage = detailImageUrl && detailImageUrl.trim() !== '' && detailImageUrl !== 'null'
+  const isValidThumbnail = thumbnailUrl && thumbnailUrl.trim() !== '' && thumbnailUrl !== 'null'
+  const isValidCoverImage = coverImage && coverImage.trim() !== '' && coverImage !== 'null'
+
+  // 우선순위에 따라 이미지 선택
+  useEffect(() => {
+    // 이미지 에러 상태 초기화
+    setImageError(false)
+    
+    if (isValidDetailImage) {
+      setCurrentImageSrc(detailImageUrl!)
+    } else if (isValidThumbnail) {
+      setCurrentImageSrc(thumbnailUrl!)
+    } else if (isValidCoverImage) {
+      setCurrentImageSrc(coverImage!)
+    } else {
+      setCurrentImageSrc(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailImageUrl, thumbnailUrl, coverImage])
+
+  const handleImageError = () => {
+    console.log('이미지 로드 실패, 다음 이미지로 폴백:', currentImageSrc)
+    setImageError(true)
+    
+    // detail_image_url이 실패했을 때 썸네일로 폴백
+    if (currentImageSrc === detailImageUrl && isValidThumbnail) {
+      setCurrentImageSrc(thumbnailUrl!)
+      setImageError(false) // 썸네일 시도
+    } else if (currentImageSrc === thumbnailUrl && isValidCoverImage) {
+      setCurrentImageSrc(coverImage!)
+    } else {
+      setCurrentImageSrc(null)
+    }
+  }
+
+  if (!currentImageSrc) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold">
+        📚 {title}
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={currentImageSrc}
+      alt={title}
+      className="w-full h-full object-cover"
+      onError={handleImageError}
+    />
+  )
+}
+
 export default function EbookDetailPage() {
   const params = useParams()
   const ebookId = params.id as string
@@ -60,7 +130,15 @@ export default function EbookDetailPage() {
         const foundEbook = data.ebooks.find((e: any) => e.id === ebookId)
         if (foundEbook) {
           console.log('📚 전자책 데이터 로드됨:', foundEbook)
+          console.log('🖼️ 이미지 URL 확인:', {
+            detail_image_url: foundEbook.detail_image_url,
+            thumbnail_url: foundEbook.thumbnail_url,
+            cover_image: foundEbook.cover_image,
+            detailImageValid: foundEbook.detail_image_url && foundEbook.detail_image_url.trim() !== '' && foundEbook.detail_image_url !== 'null'
+          })
           setEbook(foundEbook)
+        } else {
+          console.warn('⚠️ 전자책을 찾을 수 없습니다:', ebookId)
         }
       }
     } catch (error) {
@@ -269,13 +347,23 @@ export default function EbookDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-'
+    try {
+      const date = new Date(dateString)
+      // Invalid Date 체크
+      if (isNaN(date.getTime())) {
+        return '-'
+      }
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    } catch (error) {
+      console.error('날짜 포맷 오류:', error, dateString)
+      return '-'
+    }
   }
 
   if (loading) {
@@ -332,29 +420,12 @@ export default function EbookDetailPage() {
           <div className="md:flex">
             <div className="md:w-1/2">
               <div className="h-64 md:h-full bg-gradient-to-r from-blue-500 to-purple-600 relative">
-                {ebook.detail_image_url ? (
-                  <img
-                    src={ebook.detail_image_url}
-                    alt={ebook.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : ebook.thumbnail_url ? (
-                  <img
-                    src={ebook.thumbnail_url}
-                    alt={ebook.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : ebook.cover_image ? (
-                  <img
-                    src={ebook.cover_image}
-                    alt={ebook.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold">
-                    📚 {ebook.title}
-                  </div>
-                )}
+                <EbookDetailImage 
+                  detailImageUrl={ebook.detail_image_url}
+                  thumbnailUrl={ebook.thumbnail_url}
+                  coverImage={ebook.cover_image}
+                  title={ebook.title}
+                />
               </div>
             </div>
             <div className="md:w-1/2 p-6">

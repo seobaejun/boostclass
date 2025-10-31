@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     
     const supabase = createClient()
     
-    // Supabase 쿼리 빌더: category_id로 categories 테이블의 name 조인
+    // Supabase 쿼리 빌더: courses 테이블에서 직접 조회 (categories 조인 제거)
     let query = supabase
       .from('courses')
-      .select('*, categories(name)') // detail_image_url 포함, *로 안전하게 유지
+      .select('*') // categories 조인 제거 (category는 courses 테이블의 TEXT 필드)
       .range(offset, offset + limit - 1)
 
     // 특별한 카테고리 처리 (실제 테이블 스키마에 맞게)
@@ -122,8 +122,8 @@ export async function GET(request: NextRequest) {
       data: {
         courses: processedCourses.map((c: any) => ({
           ...c,
-          category: c.category || c.categories?.name || '-',
-          status: c.status || (c.published === true ? '공개' : '초안'),
+          category: c.category || '-', // category는 courses 테이블의 직접 필드
+          status: c.status || 'draft', // status 필드 사용
           detail_image_url: c.detail_image_url || '', // 확실히 포함!
           original_price: c.original_price || null, // original_price 포함
         })),

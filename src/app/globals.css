@@ -39,6 +39,19 @@ body {
   animation: marquee 30s linear infinite;
 }
 
+@keyframes blink-color {
+  0%, 100% {
+    color: #ffffff;
+  }
+  50% {
+    color: #fbbf24;
+  }
+}
+
+.animate-blink-color {
+  animation: blink-color 1.5s ease-in-out infinite;
+}
+
 /* Line clamp utilities */
 .line-clamp-1 {
   overflow: hidden;

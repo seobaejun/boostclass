@@ -5,34 +5,18 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // 환경 변수 검증 및 설정
-let finalUrl: string
-let finalKey: string
-
-// 개발용 임시 설정 (프로덕션에서는 제거해야 함)
-const tempUrl = 'https://mpejkujtaiqgmbazobjv.supabase.co'
-const tempKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZWprdWp0YWlxZ21iYXpvYmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1ODIwMDAsImV4cCI6MjA3NjE1ODAwMH0.cpFLDyB2QsPEh-8UT5DtXIdIyeN8--Z7V8fdVs3bZII'
-
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ Supabase 환경 변수가 설정되지 않았습니다. 개발용 임시 설정을 사용합니다.')
-  console.warn('프로덕션에서는 다음 환경 변수를 설정해주세요:')
-  console.warn('- NEXT_PUBLIC_SUPABASE_URL')
-  console.warn('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  
-  // 임시 설정 사용
-  finalUrl = tempUrl
-  finalKey = tempKey
-} else {
-  // 환경 변수가 설정된 경우
-  console.log('✅ Supabase 환경 변수가 올바르게 설정되었습니다.')
-  
-  finalUrl = supabaseUrl
-  finalKey = supabaseKey
+  throw new Error(
+    '⚠️ Supabase 환경 변수가 설정되지 않았습니다.\n' +
+    '다음 환경 변수를 .env.local 파일에 설정해주세요:\n' +
+    '- NEXT_PUBLIC_SUPABASE_URL\n' +
+    '- NEXT_PUBLIC_SUPABASE_ANON_KEY\n' +
+    '- SUPABASE_SERVICE_ROLE_KEY (선택사항)'
+  )
 }
 
-// 최종 검증
-if (!finalUrl || !finalKey) {
-  throw new Error('Supabase URL과 Key가 필요합니다.')
-}
+const finalUrl = supabaseUrl
+const finalKey = supabaseKey
 
 console.log('🔧 Supabase 설정:', {
   url: finalUrl,
