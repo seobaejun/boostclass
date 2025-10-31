@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Header from '@/components/Header'
@@ -34,7 +34,7 @@ interface CoursesData {
   }
 }
 
-export default function CoursesPage() {
+function CoursesContent() {
   const searchParams = useSearchParams()
   const [coursesData, setCoursesData] = useState<CoursesData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -427,5 +427,23 @@ export default function CoursesPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function CoursesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">로딩 중...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <CoursesContent />
+    </Suspense>
   )
 }

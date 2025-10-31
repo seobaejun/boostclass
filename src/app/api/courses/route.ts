@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 
+// 동적 라우트로 설정 (request.url 사용으로 인해 정적 렌더링 불가)
+export const dynamic = 'force-dynamic'
+
 // Vercel에서 성능 최적화: 캐싱 설정 (60초)
 export const revalidate = 60
 
