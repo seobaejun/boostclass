@@ -1,0 +1,80 @@
+# Vercel 환경 변수 설정 템플릿
+# 이 파일을 메모장으로 열어서 값을 채운 후 Vercel에 복사하세요.
+# 
+# 설정 방법:
+# 1. 아래 각 변수의 "여기에_값_입력" 부분을 실제 값으로 교체
+# 2. Vercel 대시보드 → Settings → Environment Variables에서
+#    Key와 Value를 각각 복사하여 추가
+#
+# ==========================================
+# 필수 환경 변수 (반드시 설정 필요)
+# ==========================================
+
+# Supabase 프로젝트 URL
+# Supabase 대시보드 → Settings → API → Project URL
+NEXT_PUBLIC_SUPABASE_URL=여기에_값_입력
+# 예시: https://jlqdzdemcizwnrrhahea.supabase.co
+
+# Supabase 공개 API 키 (Anon Key)
+# Supabase 대시보드 → Settings → API → anon public key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=여기에_값_입력
+# 예시: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Supabase 서비스 키 (Service Role Key) - 이미지 업로드 등에 필요
+# Supabase 대시보드 → Settings → API → service_role secret key
+SUPABASE_SERVICE_ROLE_KEY=여기에_값_입력
+# 예시: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ==========================================
+# 선택적 환경 변수 (사용하는 기능에 따라 설정)
+# ==========================================
+
+# 토스 페이먼츠 클라이언트 키
+# 토스 페이먼츠 개발자 센터 → 내 상점 → 연동 키
+NEXT_PUBLIC_TOSS_CLIENT_KEY=여기에_값_입력
+# 테스트 키 예시: test_ck_P9BRQmyarYymBN4obxjNrJ07KzLN
+
+# 토스 페이먼츠 시크릿 키
+# 토스 페이먼츠 개발자 센터 → 내 상점 → 연동 키
+TOSS_SECRET_KEY=여기에_값_입력
+# 테스트 키 예시: test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R
+
+# 애플리케이션 기본 URL (결제 리다이렉트용)
+# 프로덕션: Vercel 배포 후 생성된 URL
+# 예시: https://your-project-name.vercel.app
+NEXT_PUBLIC_BASE_URL=여기에_값_입력
+# 로컬 개발용: http://localhost:3000
+
+# ==========================================
+# Cloudflare R2 관련 (현재 사용 안 함, 필요 시 주석 해제)
+# ==========================================
+
+# CLOUDFLARE_ACCOUNT_ID=여기에_값_입력
+# CLOUDFLARE_ACCESS_KEY_ID=여기에_값_입력
+# CLOUDFLARE_SECRET_ACCESS_KEY=여기에_값_입력
+# CLOUDFLARE_R2_BUCKET_NAME=여기에_값_입력
+# CLOUDFLARE_R2_PUBLIC_URL=여기에_값_입력
+
+# ==========================================
+# Vercel 설정 안내
+# ==========================================
+#
+# 1. Vercel 대시보드 접속: https://vercel.com/dashboard
+# 2. 프로젝트 선택
+# 3. Settings → Environment Variables 클릭
+# 4. "Add New" 버튼 클릭
+# 5. Key: 위의 변수명 (예: NEXT_PUBLIC_SUPABASE_URL)
+# 6. Value: = 뒤의 값만 입력 (예: https://jlqdzdemcizwnrrhahea.supabase.co)
+# 7. Environment: Production, Preview, Development 선택 (또는 All)
+# 8. Save 클릭
+# 9. 재배포: Deployments → 최신 배포 → "..." → Redeploy
+#
+# ==========================================
+# 주의사항
+# ==========================================
+#
+# - NEXT_PUBLIC_ 접두사가 있는 변수는 클라이언트에서도 접근 가능
+# - SUPABASE_SERVICE_ROLE_KEY는 NEXT_PUBLIC_ 접두사 없이 설정
+# - Vercel에서는 대소문자를 구분하므로 정확히 입력
+# - 이 파일의 "여기에_값_입력" 부분을 실제 값으로 교체해야 함
+
