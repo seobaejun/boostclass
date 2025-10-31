@@ -25,7 +25,7 @@ export async function checkDatabaseConnection() {
 // 테이블 존재 여부 확인
 export async function checkTablesExist() {
   const tables = ['categories', 'courses', 'lessons', 'purchases', 'course_progress', 'lesson_progress']
-  const results = {}
+  const results: Record<string, { exists: boolean; error: string | null }> = {}
   
   for (const table of tables) {
     try {

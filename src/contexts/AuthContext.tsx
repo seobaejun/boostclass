@@ -166,8 +166,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: { name },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          // 이메일 확인 비활성화
-          emailConfirm: false
         },
       })
 
