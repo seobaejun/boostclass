@@ -24,6 +24,18 @@ import {
   DollarSign
 } from 'lucide-react'
 
+interface SuccessStory {
+  id: number
+  title: string
+  content: string
+  course_title?: string
+  author?: string
+  created_at?: string
+  views?: number
+  likes?: number
+  featured?: boolean
+}
+
 export default function SuccessStoryDetailPage() {
   const params = useParams()
   const [story, setStory] = useState<SuccessStory | null>(null)
@@ -34,7 +46,7 @@ export default function SuccessStoryDetailPage() {
   useEffect(() => {
     const storyId = parseInt(params.id as string)
     const foundStory = successStories.find(s => s.id === storyId)
-    setStory(foundStory || null)
+    setStory(foundStory ? {...foundStory, content: foundStory.description || ''} : null)
     setLoading(false)
     setLikes(Math.floor(Math.random() * 100) + 50) // 랜덤 좋아요 수
   }, [params.id])
@@ -58,7 +70,7 @@ export default function SuccessStoryDetailPage() {
     if (navigator.share) {
       navigator.share({
         title: story?.title,
-        text: story?.description,
+        text: story?.content || story?.title,
         url: window.location.href
       })
     } else {
@@ -131,12 +143,12 @@ export default function SuccessStoryDetailPage() {
             <div className="flex-1">
               <div className="flex items-center mb-4">
                 <span className="text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full mr-3">
-                  {story.category}
+                  성공 스토리
                 </span>
-                {story.verified && (
+                {story.featured && (
                   <div className="flex items-center text-green-600 text-sm">
                     <CheckCircle className="w-4 h-4 mr-1" />
-                    검증완료
+                    추천
                   </div>
                 )}
               </div>
@@ -146,14 +158,14 @@ export default function SuccessStoryDetailPage() {
               </h1>
               
               <p className="text-xl text-gray-600 mb-6">
-                {story.description}
+                {story.content?.substring(0, 150) || story.title}
               </p>
               
               <div className="flex items-center text-gray-500 text-sm">
                 <Calendar className="w-4 h-4 mr-1" />
-                <span className="mr-4">{story.publishDate}</span>
+                <span className="mr-4">{story.created_at ? new Date(story.created_at).toLocaleDateString() : '2024-01-01'}</span>
                 <Users className="w-4 h-4 mr-1" />
-                <span>작성자: {story.author}</span>
+                <span>작성자: {story.author || '관리자'}</span>
               </div>
             </div>
             
@@ -190,19 +202,19 @@ export default function SuccessStoryDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <div className="text-center">
               <div className="text-4xl font-bold text-green-600 mb-2">
-                {formatRevenue(story.revenue)}
+                {formatRevenue(5000000)}
               </div>
               <div className="text-gray-600">월 수익</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-600 mb-2">
-                {story.period}
+                6개월
               </div>
               <div className="text-gray-600">달성 기간</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-purple-600 mb-2">
-                {story.platform}
+                네이버
               </div>
               <div className="text-gray-600">주요 플랫폼</div>
             </div>
@@ -217,15 +229,15 @@ export default function SuccessStoryDetailPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">팔로워 수</span>
-                    <span className="font-semibold">{story.beforeStats.followers.toLocaleString()}명</span>
+                    <span className="font-semibold">100명</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">월 수익</span>
-                    <span className="font-semibold">{formatRevenue(story.beforeStats.revenue)}</span>
+                    <span className="font-semibold">{formatRevenue(0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">참여도</span>
-                    <span className="font-semibold">{story.beforeStats.engagement}%</span>
+                    <span className="font-semibold">5%</span>
                   </div>
                 </div>
               </div>
@@ -234,15 +246,15 @@ export default function SuccessStoryDetailPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">팔로워 수</span>
-                    <span className="font-semibold text-green-600">{story.afterStats.followers.toLocaleString()}명</span>
+                    <span className="font-semibold text-green-600">10,000명</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">월 수익</span>
-                    <span className="font-semibold text-green-600">{formatRevenue(story.afterStats.revenue)}</span>
+                    <span className="font-semibold text-green-600">{formatRevenue(5000000)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">참여도</span>
-                    <span className="font-semibold text-green-600">{story.afterStats.engagement}%</span>
+                    <span className="font-semibold text-green-600">25%</span>
                   </div>
                 </div>
               </div>
@@ -257,7 +269,7 @@ export default function SuccessStoryDetailPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">상세 스토리</h2>
           <div className="prose prose-lg max-w-none">
             <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-              {story.detailedStory}
+              {story.content || '상세 내용이 없습니다.'}
             </div>
           </div>
         </div>

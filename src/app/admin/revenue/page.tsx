@@ -175,7 +175,7 @@ export default function RevenuePage() {
     stats.revenueByCategory.forEach(category => {
       categoryData.push([
         category.category,
-        category.revenue,
+        category.revenue.toString(),
         category.percentage.toFixed(1)
       ])
     })
@@ -189,8 +189,8 @@ export default function RevenuePage() {
     stats.revenueByMonth.forEach(month => {
       monthlyData.push([
         month.month,
-        month.revenue,
-        month.transactions
+        month.revenue.toString(),
+        month.transactions.toString()
       ])
     })
     const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData)
@@ -202,11 +202,11 @@ export default function RevenuePage() {
     ]
     stats.topCourses.forEach((course, index) => {
       topCoursesData.push([
-        index + 1,
+        (index + 1).toString(),
         course.title,
         course.instructor,
-        course.sales,
-        course.revenue
+        course.sales.toString(),
+        course.revenue.toString()
       ])
     })
     const topCoursesSheet = XLSX.utils.aoa_to_sheet(topCoursesData)
@@ -218,11 +218,11 @@ export default function RevenuePage() {
     ]
     stats.recentTransactions.forEach(transaction => {
       transactionsData.push([
-        transaction.id,
+        transaction.id.toString(),
         formatDate(transaction.date),
         transaction.course,
         transaction.user,
-        transaction.amount,
+        transaction.amount.toString(),
         getStatusLabel(transaction.status)
       ])
     })

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     console.error('🧪 테스트 API 오류:', error)
     return NextResponse.json({ 
       success: false, 
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }

@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 export async function checkDatabaseConnection() {
   try {
     // 1. 기본 연결 테스트
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('categories')
       .select('count')
       .limit(1)
@@ -15,7 +15,7 @@ export async function checkDatabaseConnection() {
     }
     
     console.log('✅ 데이터베이스 연결 성공!')
-    return { success: true, data }
+    return { success: true }
   } catch (error) {
     console.error('데이터베이스 연결 오류:', error)
     return { success: false, error: '연결 오류가 발생했습니다.' }
@@ -29,7 +29,7 @@ export async function checkTablesExist() {
   
   for (const table of tables) {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(table)
         .select('count')
         .limit(1)
@@ -41,7 +41,7 @@ export async function checkTablesExist() {
     } catch (error) {
       results[table] = {
         exists: false,
-        error: error.message
+        error: error instanceof Error ? error.message : '알 수 없는 오류'
       }
     }
   }
@@ -125,8 +125,8 @@ export async function getDatabaseStatus() {
   // 2. 테이블 존재 확인
   const tableStatus = await checkTablesExist()
   const missingTables = Object.entries(tableStatus)
-    .filter(([_, status]) => !status.exists)
-    .map(([table, _]) => table)
+    .filter(([, status]: [string, { exists: boolean; error: string | null }]) => !(status as { exists: boolean; error: string | null }).exists)
+    .map(([tableName]) => tableName)
   
   if (missingTables.length > 0) {
     return {

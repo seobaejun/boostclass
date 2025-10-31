@@ -243,9 +243,9 @@ export default function EbookManagementPage() {
         const responseText = await response.text()
         console.error('업로드 실패 응답 텍스트:', responseText)
         
-        let errorData = {}
+        let errorData: { error?: string } = {}
         try {
-          errorData = JSON.parse(responseText)
+          errorData = JSON.parse(responseText) as { error?: string }
         } catch (e) {
           console.error('JSON 파싱 실패:', e)
           errorData = { error: responseText || '알 수 없는 오류가 발생했습니다.' }
@@ -448,7 +448,7 @@ export default function EbookManagementPage() {
       let filteredEbooks = allEbooks
 
       if (searchTerm) {
-        filteredEbooks = filteredEbooks.filter(ebook =>
+        filteredEbooks = filteredEbooks.filter((ebook: Ebook) =>
           ebook.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           ebook.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
           ebook.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -456,11 +456,11 @@ export default function EbookManagementPage() {
       }
 
       if (categoryFilter !== 'all') {
-        filteredEbooks = filteredEbooks.filter(ebook => ebook.category === categoryFilter)
+        filteredEbooks = filteredEbooks.filter((ebook: Ebook) => ebook.category === categoryFilter)
       }
 
       if (statusFilter !== 'all') {
-        filteredEbooks = filteredEbooks.filter(ebook => ebook.status === statusFilter)
+        filteredEbooks = filteredEbooks.filter((ebook: Ebook) => ebook.status === statusFilter)
       }
 
       setEbooks(filteredEbooks)

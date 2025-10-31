@@ -102,15 +102,15 @@ export async function POST(request: NextRequest) {
     console.error('❌ 결제 검증 오류:', error)
     
     if (error instanceof z.ZodError) {
-      console.error('❌ 데이터 검증 오류:', error.errors)
+      console.error('❌ 데이터 검증 오류:', error.issues)
       return NextResponse.json(
-        { success: false, error: '잘못된 입력 데이터입니다.', details: error.errors },
+        { success: false, error: '잘못된 입력 데이터입니다.', details: error.issues },
         { status: 400 }
       )
     }
 
     return NextResponse.json(
-      { success: false, error: '결제 검증 처리 중 오류가 발생했습니다.', details: error.message },
+      { success: false, error: '결제 검증 처리 중 오류가 발생했습니다.', details: (error as Error).message },
       { status: 500 }
     )
   }

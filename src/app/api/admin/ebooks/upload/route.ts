@@ -115,15 +115,12 @@ export async function POST(request: NextRequest) {
     if (uploadError) {
       console.error('Supabase Storage 업로드 오류:', {
         message: uploadError.message,
-        error: uploadError.error,
-        statusCode: uploadError.statusCode,
         details: uploadError
       })
       
       // RLS 정책 오류인 경우 특별한 메시지 제공
       if (uploadError.message?.includes('row-level security') || 
-          uploadError.message?.includes('policy') ||
-          uploadError.statusCode === '42501') {
+          uploadError.message?.includes('policy')) {
         return NextResponse.json({
           success: false,
           error: `파일 업로드 실패: RLS 정책 오류입니다. Supabase Storage 버킷 설정을 확인해주세요.`,
@@ -200,8 +197,7 @@ export async function POST(request: NextRequest) {
       if (detailImageUploadError) {
         console.error('❌ 상세 이미지 업로드 오류:', {
           message: detailImageUploadError.message,
-          statusCode: detailImageUploadError.statusCode,
-          error: detailImageUploadError.error
+          details: detailImageUploadError
         })
         // 버킷이 없을 가능성이 높으므로 에러 정보를 상세히 로깅
         if (detailImageUploadError.message?.includes('bucket') || detailImageUploadError.message?.includes('not found')) {

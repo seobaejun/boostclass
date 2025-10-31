@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Course {
@@ -196,10 +197,11 @@ export default function EarlyBirdSection() {
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 border-2 border-orange-200 h-full flex flex-col">
                   <div className="aspect-square relative overflow-hidden flex-shrink-0">
                     {course.thumbnail_url ? (
-                      <img
+                      <Image
                         src={course.thumbnail_url}
                         alt={course.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-500">

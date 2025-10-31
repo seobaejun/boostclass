@@ -308,7 +308,7 @@ export default function InstructorManagementPage() {
       let filteredInstructors = allInstructors
 
       if (searchTerm) {
-        filteredInstructors = filteredInstructors.filter(instructor =>
+        filteredInstructors = filteredInstructors.filter((instructor: Instructor) =>
           instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           instructor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           instructor.bio.toLowerCase().includes(searchTerm.toLowerCase())
@@ -316,11 +316,11 @@ export default function InstructorManagementPage() {
       }
 
       if (statusFilter !== 'all') {
-        filteredInstructors = filteredInstructors.filter(instructor => instructor.status === statusFilter)
+        filteredInstructors = filteredInstructors.filter((instructor: Instructor) => instructor.status === statusFilter)
       }
 
       if (specialtyFilter !== 'all') {
-        filteredInstructors = filteredInstructors.filter(instructor => 
+        filteredInstructors = filteredInstructors.filter((instructor: Instructor) => 
           instructor.specialties.includes(specialtyFilter)
         )
       }
@@ -336,8 +336,8 @@ export default function InstructorManagementPage() {
 
   const specialties = ['React', 'Node.js', 'TypeScript', 'AWS', 'UI/UX', 'Figma', 'SEO', 'SEM', 'Python', 'R', 'Machine Learning', 'Java', 'Spring Boot', 'MySQL']
   const totalInstructors = instructors.length
-  const pendingInstructors = instructors.filter(i => i.status === 'pending').length
-  const approvedInstructors = instructors.filter(i => i.status === 'approved').length
+  const pendingInstructors = instructors.filter((i: Instructor) => i.status === 'pending').length
+  const approvedInstructors = instructors.filter((i: Instructor) => i.status === 'approved').length
   const totalStudents = instructors.reduce((sum, instructor) => sum + instructor.total_students, 0)
   const averageRating = instructors.length > 0 ? 
     (instructors.reduce((sum, instructor) => sum + instructor.average_rating, 0) / instructors.length).toFixed(1) : 0

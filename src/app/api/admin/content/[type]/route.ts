@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { supabase } from '@/lib/supabase'
 
 export async function GET(
@@ -48,6 +49,7 @@ export async function GET(
 
     console.log('🔍 검색 파라미터:', { search, status, category, filterStatus, page, limit })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let items: any[] = []
 
     // 콘텐츠 타입에 따라 다른 데이터 조회
@@ -313,8 +315,10 @@ export async function GET(
           }
         }
 
-        const { count } = await countQuery
-        totalCount = count || 0
+        if (countQuery) {
+          const { count } = await countQuery
+          totalCount = count || 0
+        }
       } catch (error) {
         console.error('❌ 총 개수 조회 실패:', error)
       }
@@ -332,10 +336,11 @@ export async function GET(
     
     return NextResponse.json(response)
 
-  } catch (error: any) {
+  } catch (error) {
     console.error(`❌ 콘텐츠 조회 오류:`, error)
+    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
     return NextResponse.json(
-      { success: false, error: '콘텐츠를 가져오는 중 오류가 발생했습니다.', details: error.message },
+      { success: false, error: '콘텐츠를 가져오는 중 오류가 발생했습니다.', details: errorMessage },
       { status: 500 }
     )
   }
@@ -351,8 +356,8 @@ export async function POST(
 
     // Supabase 연결 테스트 (가장 간단한 테스트)
     console.log('🔍 Supabase 연결 상태 확인 중...')
-    console.log('🔍 Supabase URL:', supabase.supabaseUrl)
-    console.log('🔍 Supabase Key 접두사:', supabase.supabaseKey?.substring(0, 20) + '...')
+    console.log('🔍 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('🔍 Supabase Key 접두사:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
     
     try {
       // 연결 테스트를 우회하고 바로 notices 테이블 확인
@@ -387,17 +392,19 @@ export async function POST(
       } else {
         console.log('✅ Supabase 연결 성공, notices 테이블 존재함, 데이터 수:', testData?.length || 0, '개')
       }
-    } catch (connectionError: any) {
+    } catch (connectionError) {
       console.error('❌ Supabase 연결 예외:', connectionError)
       console.error('❌ 연결 예외 타입:', typeof connectionError)
-      console.error('❌ 연결 예외 메시지:', connectionError.message)
-      console.error('❌ 연결 예외 스택:', connectionError.stack)
+      const errorMessage = connectionError instanceof Error ? connectionError.message : '알 수 없는 오류'
+      const errorStack = connectionError instanceof Error ? connectionError.stack : undefined
+      console.error('❌ 연결 예외 메시지:', errorMessage)
+      console.error('❌ 연결 예외 스택:', errorStack)
       
       return NextResponse.json({ 
         success: false, 
-        error: `Supabase 연결 예외: ${connectionError.message || connectionError}`,
+        error: `Supabase 연결 예외: ${errorMessage}`,
         errorType: typeof connectionError,
-        connectionError: connectionError.toString(),
+        connectionError: connectionError instanceof Error ? connectionError.toString() : String(connectionError),
         connectionTest: 'exception'
       }, { status: 500 })
     }
@@ -421,10 +428,12 @@ export async function POST(
       console.log('📥 요청 본문 파싱 성공:', body)
     } catch (bodyError) {
       console.error('❌ 요청 본문 파싱 실패:', bodyError)
+      const errorMessage = bodyError instanceof Error ? bodyError.message : String(bodyError)
+      const errorString = bodyError instanceof Error ? bodyError.toString() : String(bodyError)
       return NextResponse.json({ 
         success: false, 
-        error: `요청 본문 파싱 실패: ${bodyError.message}`,
-        parseError: bodyError.toString()
+        error: `요청 본문 파싱 실패: ${errorMessage}`,
+        parseError: errorString
       }, { status: 400 })
     }
 
@@ -461,8 +470,6 @@ export async function POST(
     switch (type) {
       case 'notices':
         console.log('📝 공지사항 처리 시작...')
-        // UUID 생성을 위한 crypto 모듈 사용
-        const { randomUUID } = require('crypto')
         
         const noticeData = {
           id: randomUUID(), // 명시적으로 UUID 생성
@@ -542,15 +549,18 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
     console.log('✅ 콘텐츠 저장 완료:', newItem.id)
     return NextResponse.json({ success: true, item: newItem })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ 콘텐츠 생성 오류:', error)
-    console.error('❌ 오류 스택:', error.stack)
+    const errorStack = error instanceof Error ? error.stack : undefined
+    const errorMessage = error instanceof Error ? error.message : '콘텐츠 생성에 실패했습니다.'
+    const errorType = error instanceof Error ? error.constructor.name : typeof error
+    console.error('❌ 오류 스택:', errorStack)
     
     const errorResponse = {
       success: false, 
-      error: error.message || '콘텐츠 생성에 실패했습니다.',
-      errorType: error.constructor.name,
-      errorDetails: error
+      error: errorMessage,
+      errorType: errorType,
+      errorDetails: error instanceof Error ? error.message : String(error)
     }
     
     console.log('📤 최종 오류 응답:', errorResponse)

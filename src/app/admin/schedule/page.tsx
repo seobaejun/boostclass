@@ -112,7 +112,7 @@ export default function ScheduleManagementPage() {
     const data = await response.json()
     const allSchedules = data.schedules || []
 
-    let filteredSchedules = allSchedules.filter(schedule => {
+    const filteredSchedules = allSchedules.filter((schedule: Schedule) => {
       const matchesSearch = searchTerm === '' ||
         schedule.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         schedule.description.toLowerCase().includes(searchTerm.toLowerCase()) ||

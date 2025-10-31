@@ -102,18 +102,18 @@ export default function UsersPage() {
       let filteredUsers = allUsers
 
       if (searchTerm) {
-        filteredUsers = filteredUsers.filter(user => 
+        filteredUsers = filteredUsers.filter((user: User) => 
           user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
         )
       }
 
       if (roleFilter !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.role === roleFilter)
+        filteredUsers = filteredUsers.filter((user: User) => user.role === roleFilter)
       }
 
       if (statusFilter !== 'all') {
-        filteredUsers = filteredUsers.filter(user => 
+        filteredUsers = filteredUsers.filter((user: User) => 
           statusFilter === 'active' ? user.is_active : !user.is_active
         )
       }

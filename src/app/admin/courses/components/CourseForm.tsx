@@ -1,4 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import Image from 'next/image';
 import { Upload, X, Save, Plus, Minus } from 'lucide-react';
 
 export interface CourseFormData {
@@ -217,8 +218,8 @@ export default function CourseForm({ mode, initialData, onSubmit, loading, onCan
         <div className="flex-1 flex flex-col items-center">
           <label className="block mb-1 font-semibold">썸네일 이미지</label>
           {form.thumbnail_url && (
-            <div className="mb-2 w-32 h-32 aspect-square rounded bg-gray-100 overflow-hidden flex items-center justify-center">
-              <img src={form.thumbnail_url} className="object-cover w-full h-full" />
+            <div className="mb-2 w-32 h-32 aspect-square rounded bg-gray-100 overflow-hidden flex items-center justify-center relative">
+              <Image src={form.thumbnail_url} alt="썸네일 미리보기" fill className="object-cover" unoptimized />
             </div>
           )}
           <label className="relative group cursor-pointer">
@@ -239,8 +240,8 @@ export default function CourseForm({ mode, initialData, onSubmit, loading, onCan
         <div className="flex-1 flex flex-col items-center">
           <label className="block mb-1 font-semibold">상세 이미지</label>
           {form.detail_image_url && (
-            <div className="mb-2 w-32 h-32 aspect-square rounded bg-gray-100 overflow-hidden flex items-center justify-center">
-              <img src={form.detail_image_url} className="object-cover w-full h-full" alt="상세이미지 미리보기" />
+            <div className="mb-2 w-32 h-32 aspect-square rounded bg-gray-100 overflow-hidden flex items-center justify-center relative">
+              <Image src={form.detail_image_url} alt="상세이미지 미리보기" fill className="object-cover" unoptimized />
             </div>
           )}
           <label className="relative group cursor-pointer">

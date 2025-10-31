@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const payload = await request.json();
   
   console.log('🔧 강의 수정 요청:', {
@@ -48,8 +48,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   return NextResponse.json({ success: true });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   try {
     // 강의 삭제

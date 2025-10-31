@@ -81,8 +81,7 @@ export async function POST(request: Request) {
     if (error) {
       console.error('❌ 업로드 실패:', {
         message: error.message,
-        statusCode: error.statusCode,
-        error: error.error
+        details: error
       })
       // 버킷이 없을 가능성 체크
       if (error.message?.includes('bucket') || error.message?.includes('not found')) {

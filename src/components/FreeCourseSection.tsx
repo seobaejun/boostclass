@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Play, Users, Clock, Star } from 'lucide-react'
 
 interface Course {
@@ -169,10 +170,11 @@ export default function FreeCourseSection() {
                         <Link href={`/courses/${course.id}`} className="block">
                           <div className="aspect-square relative overflow-hidden flex-shrink-0 cursor-pointer">
                           {course.thumbnail_url ? (
-                            <img
+                            <Image
                               src={course.thumbnail_url}
                               alt={course.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
                             <div

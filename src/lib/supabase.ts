@@ -6,23 +6,38 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // 환경 변수 검증 및 설정
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    '⚠️ Supabase 환경 변수가 설정되지 않았습니다.\n' +
-    '다음 환경 변수를 .env.local 파일에 설정해주세요:\n' +
-    '- NEXT_PUBLIC_SUPABASE_URL\n' +
-    '- NEXT_PUBLIC_SUPABASE_ANON_KEY\n' +
-    '- SUPABASE_SERVICE_ROLE_KEY (선택사항)'
-  )
+  console.error('⚠️ Supabase 환경 변수가 설정되지 않았습니다.')
+  console.error('다음 환경 변수를 .env.local 파일에 설정해주세요:')
+  console.error('- NEXT_PUBLIC_SUPABASE_URL')
+  console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  console.error('- SUPABASE_SERVICE_ROLE_KEY (선택사항)')
+  
+  // 개발 환경에서는 더미 값으로 계속 진행 (에러 방지)
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('⚠️ 개발 환경: 더미 값으로 계속 진행합니다.')
+  } else {
+    throw new Error(
+      '⚠️ Supabase 환경 변수가 설정되지 않았습니다.\n' +
+      '다음 환경 변수를 .env.local 파일에 설정해주세요:\n' +
+      '- NEXT_PUBLIC_SUPABASE_URL\n' +
+      '- NEXT_PUBLIC_SUPABASE_ANON_KEY\n' +
+      '- SUPABASE_SERVICE_ROLE_KEY (선택사항)'
+    )
+  }
 }
 
-const finalUrl = supabaseUrl
-const finalKey = supabaseKey
+const finalUrl = supabaseUrl || 'https://placeholder.supabase.co'
+const finalKey = supabaseKey || 'placeholder-key'
 
-console.log('🔧 Supabase 설정:', {
-  url: finalUrl,
-  keyPrefix: finalKey.substring(0, 20) + '...',
-  hasEnvVars: !!(supabaseUrl && supabaseKey)
-})
+if (supabaseUrl && supabaseKey) {
+  console.log('🔧 Supabase 설정:', {
+    url: finalUrl,
+    keyPrefix: finalKey.substring(0, 20) + '...',
+    hasEnvVars: true
+  })
+} else {
+  console.warn('⚠️ Supabase 환경 변수가 없습니다. 더미 값 사용 중')
+}
 
 // Supabase 클라이언트 생성
 export const supabase = createSupabaseClient(finalUrl, finalKey, {
@@ -42,8 +57,8 @@ export function createClient() {
     url: finalUrl,
     hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     usingServiceKey: serviceKey !== finalKey,
-    keyPrefix: serviceKey.substring(0, 20) + '...',
-    isServiceRole: serviceKey.includes('service_role')
+    keyPrefix: serviceKey ? serviceKey.substring(0, 20) + '...' : 'N/A',
+    isServiceRole: serviceKey?.includes('service_role') || false
   })
   
   return createSupabaseClient(finalUrl, serviceKey, {
@@ -56,7 +71,11 @@ export function createClient() {
 }
 
 // createSupabaseReqResClient 함수 (API 라우트에서 사용)
-export function createSupabaseReqResClient(request?: Request) {
+export function createSupabaseReqResClient(
+  // request 파라미터는 필요시 사용
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _request?: unknown
+) {
   // RLS 우회를 위해 서비스 키 우선 사용
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || finalKey
   
@@ -71,8 +90,8 @@ export function createSupabaseReqResClient(request?: Request) {
     url: finalUrl,
     hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     usingServiceKey: serviceKey !== finalKey,
-    keyPrefix: serviceKey.substring(0, 20) + '...',
-    isServiceRole: serviceKey.includes('service_role'),
+    keyPrefix: serviceKey ? serviceKey.substring(0, 20) + '...' : 'N/A',
+    isServiceRole: serviceKey?.includes('service_role') || false,
     canBypassRLS: !!process.env.SUPABASE_SERVICE_ROLE_KEY
   })
   
@@ -95,7 +114,7 @@ export function createSupabaseReqResClient(request?: Request) {
 export async function testSupabaseConnection() {
   try {
     // 1295 오류 방지를 위해 간단한 쿼리 사용
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('categories')
       .select('id')
       .limit(1)
@@ -116,8 +135,8 @@ export async function testSupabaseConnection() {
     
     console.log('✅ Supabase 연결 성공!')
     return true
-  } catch (error) {
-    console.error('Supabase 연결 오류:', error)
+  } catch (err) {
+    console.error('Supabase 연결 오류:', err)
     return false
   }
 }

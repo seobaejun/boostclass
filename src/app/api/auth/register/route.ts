@@ -37,8 +37,7 @@ export async function POST(request: NextRequest) {
       console.log('📊 사용자 상태:', {
         id: data.user.id,
         email: data.user.email,
-        email_confirmed: data.user.email_confirmed_at,
-        email_verified: data.user.email_verified
+        email_confirmed: data.user.email_confirmed_at
       })
       
       // 이메일 인증이 필요한 경우 자동으로 인증 처리
@@ -161,9 +160,9 @@ export async function POST(request: NextRequest) {
     console.error('❌ 회원가입 처리 오류:', error)
     
     if (error instanceof z.ZodError) {
-      console.error('📋 데이터 검증 오류:', error.errors)
+      console.error('📋 데이터 검증 오류:', error.issues)
       return NextResponse.json(
-        { success: false, error: '잘못된 입력 데이터입니다.', details: error.errors },
+        { success: false, error: '잘못된 입력 데이터입니다.', details: error.issues },
         { status: 400 }
       )
     }

@@ -49,6 +49,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [showPreview, setShowPreview] = useState(false)
   const [previewReport, setPreviewReport] = useState<ReportData | null>(null)
+  const [previewData, setPreviewData] = useState<any[][]>([])
 
   // 리포트 템플릿
   const reportTemplates: ReportTemplate[] = [
@@ -204,9 +205,9 @@ export default function ReportsPage() {
     }
   }
 
-  const handleDownload = (report: ReportData) => {
+  const handleDownload = async (report: ReportData) => {
     // CSV 데이터 생성
-    const csvData = generateCSVData(report)
+    const csvData = await generateCSVData(report)
     
     // CSV 파일 다운로드
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' })
@@ -225,19 +226,23 @@ export default function ReportsPage() {
     ))
   }
 
-  const handlePreview = (report: ReportData) => {
+  const handlePreview = async (report: ReportData) => {
     setPreviewReport(report)
     setShowPreview(true)
+    const data = await getReportData(report.type)
+    setPreviewData(Array.isArray(data) ? data : [])
   }
 
-  const generateCSVData = (report: ReportData) => {
+  const generateCSVData = async (report: ReportData) => {
     const headers = getReportHeaders(report.type)
-    const data = getReportData(report.type)
+    const data = await getReportData(report.type)
     
     let csvContent = headers.join(',') + '\n'
-    data.forEach(row => {
-      csvContent += row.join(',') + '\n'
-    })
+    if (Array.isArray(data)) {
+      data.forEach(row => {
+        csvContent += row.join(',') + '\n'
+      })
+    }
     
     return csvContent
   }
@@ -625,7 +630,7 @@ export default function ReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {getReportData(previewReport.type).map((row, rowIndex) => (
+                        {previewData.map((row, rowIndex) => (
                           <tr key={rowIndex} className="hover:bg-gray-50">
                             {row.map((cell, cellIndex) => (
                               <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -646,7 +651,7 @@ export default function ReportsPage() {
                       <BarChart3 className="w-8 h-8 text-blue-600 mr-3" />
                       <div>
                         <p className="text-sm font-medium text-blue-900">총 레코드</p>
-                        <p className="text-2xl font-bold text-blue-600">{getReportData(previewReport.type).length}</p>
+                        <p className="text-2xl font-bold text-blue-600">{previewData.length}</p>
                       </div>
                     </div>
                   </div>

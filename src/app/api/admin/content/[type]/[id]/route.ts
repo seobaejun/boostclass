@@ -37,6 +37,7 @@ export async function PUT(
     const body = await request.json()
     console.log('📝 수정 데이터:', body)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let result: any = null
 
     // 콘텐츠 타입에 따라 다른 테이블 업데이트
@@ -44,6 +45,7 @@ export async function PUT(
       case 'community':
         console.log('📚 커뮤니티 게시글 수정 시작')
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updateData: any = {
           updated_at: new Date().toISOString()
         }
@@ -56,7 +58,7 @@ export async function PUT(
         if (body.tags) {
           // 태그가 문자열이면 쉼표로 분리하여 배열로 변환
           if (typeof body.tags === 'string') {
-            updateData.tags = body.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+            updateData.tags = body.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
           } else if (Array.isArray(body.tags)) {
             updateData.tags = body.tags
           }
@@ -94,6 +96,7 @@ export async function PUT(
       case 'notices':
         console.log('📢 공지사항 수정 시작')
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const noticeUpdateData: any = {
           updated_at: new Date().toISOString()
         }
@@ -153,10 +156,11 @@ export async function PUT(
       item: result
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ 콘텐츠 수정 오류:', error)
+    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
     return NextResponse.json(
-      { success: false, error: '콘텐츠 수정 중 오류가 발생했습니다.', details: error.message },
+      { success: false, error: '콘텐츠 수정 중 오류가 발생했습니다.', details: errorMessage },
       { status: 500 }
     )
   }
@@ -246,10 +250,11 @@ export async function DELETE(
       message: '콘텐츠가 성공적으로 삭제되었습니다.'
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ 콘텐츠 삭제 오류:', error)
+    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
     return NextResponse.json(
-      { success: false, error: '콘텐츠 삭제 중 오류가 발생했습니다.', details: error.message },
+      { success: false, error: '콘텐츠 삭제 중 오류가 발생했습니다.', details: errorMessage },
       { status: 500 }
     )
   }

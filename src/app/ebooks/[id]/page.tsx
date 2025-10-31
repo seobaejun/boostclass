@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useAuth } from '@/contexts/AuthContext'
@@ -89,11 +90,13 @@ function EbookDetailImage({
   }
 
   return (
-    <img
+    <Image
       src={currentImageSrc}
       alt={title}
-      className="w-full h-full object-cover"
+      fill
+      className="object-cover"
       onError={handleImageError}
+      unoptimized
     />
   )
 }
@@ -419,7 +422,7 @@ export default function EbookDetailPage() {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
           <div className="md:flex">
             <div className="md:w-1/2">
-              <div className="h-64 md:h-full bg-gradient-to-r from-blue-500 to-purple-600 relative">
+              <div className="w-full aspect-square bg-gradient-to-r from-blue-500 to-purple-600 relative">
                 <EbookDetailImage 
                   detailImageUrl={ebook.detail_image_url}
                   thumbnailUrl={ebook.thumbnail_url}

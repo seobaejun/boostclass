@@ -18,14 +18,9 @@ interface Course {
   imageUrl?: string
 }
 
-interface CoursesData {
-  courses: Course[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
+interface Schedule {
+  date: string
+  courseId: string
 }
 
 export default function ScheduleSection() {
@@ -56,7 +51,7 @@ export default function ScheduleSection() {
   }, [])
 
   // 강의 일정 데이터 (실제로는 API에서 가져와야 함)
-  const scheduleData = [
+  const scheduleData: Schedule[] = [
     { date: '12월 10일', courseId: freeCourses[0]?.id || 'course-1' },
     { date: '12월 16일', courseId: freeCourses[1]?.id || 'course-2' },
     { date: '12월 23일', courseId: freeCourses[2]?.id || 'course-3' },
@@ -122,7 +117,7 @@ export default function ScheduleSection() {
                 </div>
               ))
             ) : (
-              scheduleData.map((schedule, index) => {
+              scheduleData.map((schedule: Schedule, index) => {
                 const course = freeCourses[index]
                 return (
                   <div key={index} className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">

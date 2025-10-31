@@ -48,7 +48,7 @@ export default function PaymentPage() {
 
   const loadTossPaymentsScript = () => {
     // 이미 스크립트가 로드되었는지 확인
-    if (typeof window !== 'undefined' && window.TossPayments) {
+    if (typeof window !== 'undefined' && (window as any).TossPayments) {
       console.log('✅ 토스페이먼츠 스크립트 이미 로드됨')
       return
     }

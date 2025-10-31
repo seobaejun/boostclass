@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface User {
   id: string
@@ -70,26 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe()
   }, [])
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata?.name || session.user.email!,
-        })
-      } else {
-        setUser(null)
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error)
-      setUser(null)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {

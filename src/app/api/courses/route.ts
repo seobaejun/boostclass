@@ -89,13 +89,16 @@ export async function GET(request: NextRequest) {
 
     const { count } = await countQuery
 
+    // courses가 배열인지 확인
+    const coursesArray = Array.isArray(courses) ? courses : []
+
     console.log('✅ Supabase에서 강의 데이터 조회 완료!')
-    console.log('📚 조회된 강의 수:', courses?.length || 0)
-    console.log('🔍 조회된 강의 목록:', courses?.map(c => ({ id: c.id, title: c.title, category: c.category, is_featured: c.is_featured })))
+    console.log('📚 조회된 강의 수:', coursesArray.length)
+    console.log('🔍 조회된 강의 목록:', coursesArray.map(c => ({ id: c.id, title: c.title, category: c.category, is_featured: c.is_featured })))
     
     // video_url 필드 확인
     console.log('🎬 video_url 필드 확인:')
-    courses?.forEach((course, index) => {
+    coursesArray.forEach((course, index) => {
       console.log(`  강의 ${index + 1}:`, {
         id: course.id,
         title: course.title,
@@ -106,15 +109,15 @@ export async function GET(request: NextRequest) {
     })
     
     // video_url이 있는 강의만 필터링
-    const coursesWithVideo = courses?.filter(course => course.video_url && course.video_url.trim() !== '')
-    console.log('📹 video_url이 있는 강의 수:', coursesWithVideo?.length || 0)
+    const coursesWithVideo = coursesArray.filter(course => course.video_url && course.video_url.trim() !== '')
+    console.log('📹 video_url이 있는 강의 수:', coursesWithVideo.length)
     
     // video_url 필드 처리 (데이터베이스에 컬럼이 없을 수 있음)
-    const processedCourses = courses?.map(course => ({
+    const processedCourses = coursesArray.map(course => ({
       ...course,
       video_url: course.video_url || null, // video_url이 없으면 null로 설정
       // video_url은 데이터베이스에서 조회됨
-    })) || []
+    }))
       
     // 반환 시 detail_image_url도 그대로 전달
     return NextResponse.json({

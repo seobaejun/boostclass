@@ -261,7 +261,7 @@ async function getAdminStats() {
         recentActivities = activitiesData.map((activity, index) => ({
           id: activity.id || index,
           type: 'purchase',
-          message: `${activity.courses?.title || '강의'} 구매 (${activity.amount?.toLocaleString() || 0}원)`,
+          message: `${(activity.courses && activity.courses[0]?.title) || '강의'} 구매 (${activity.amount?.toLocaleString() || 0}원)`,
           timestamp: activity.created_at,
           icon: 'shopping-cart',
           color: 'green'

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useAuth } from '@/contexts/AuthContext'
@@ -385,18 +386,22 @@ export default function CourseDetailPage() {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
           <div className="md:flex">
             <div className="md:w-1/2">
-              <div className="h-64 md:h-full bg-gradient-to-r from-blue-500 to-purple-600 relative">
+              <div className="w-full aspect-square bg-gradient-to-r from-blue-500 to-purple-600 relative">
                 {course.detail_image_url ? (
-                  <img
+                  <Image
                     src={course.detail_image_url}
                     alt={course.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : course.thumbnail_url ? (
-                  <img
+                  <Image
                     src={course.thumbnail_url}
                     alt={course.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold">

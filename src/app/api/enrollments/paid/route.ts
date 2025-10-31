@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     console.log('💾 Supabase에 실제 저장 중...')
     
     // 사용자 인증된 클라이언트로 다시 생성
-    const { createClient } = require('@supabase/supabase-js')
+    const { createClient } = await import('@supabase/supabase-js')
     const userSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mpejkujtaiqgmbazobjv.supabase.co',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZWprdWp0YWlxZ21iYXpvYmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1ODIwMDAsImV4cCI6MjA3NjE1ODAwMH0.cpFLDyB2QsPEh-8UT5DtXIdIyeN8--Z7V8fdVs3bZII',

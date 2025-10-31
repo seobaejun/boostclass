@@ -22,7 +22,6 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [played, setPlayed] = useState(0)
-  const [loaded, setLoaded] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [showControls, setShowControls] = useState(true)
@@ -110,9 +109,8 @@ export default function VideoPlayer({
     setPlaying(!playing)
   }
 
-  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number }) => {
+  const handleProgress = (state: { played: number; playedSeconds: number }) => {
     setPlayed(state.played)
-    setLoaded(state.loaded)
     onProgress?.(state)
   }
 

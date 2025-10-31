@@ -1,5 +1,34 @@
 import { supabase } from './supabase'
 
+export interface TokenPayload {
+  userId: string
+  email: string
+}
+
+/**
+ * 토큰을 검증하고 사용자 정보를 반환합니다.
+ * @param token - 인증 토큰 (Bearer 토큰 또는 쿠키에서 가져온 토큰)
+ * @returns 토큰이 유효하면 사용자 정보를 반환하고, 그렇지 않으면 null을 반환합니다.
+ */
+export async function verifyToken(token: string): Promise<TokenPayload | null> {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      console.error('Token verification error:', error?.message)
+      return null
+    }
+
+    return {
+      userId: user.id,
+      email: user.email || '',
+    }
+  } catch (error) {
+    console.error('Verify token error:', error)
+    return null
+  }
+}
+
 export async function createUser(email: string, password: string, name?: string) {
   try {
     // Supabase Auth를 사용한 회원가입

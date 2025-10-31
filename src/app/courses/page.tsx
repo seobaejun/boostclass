@@ -72,7 +72,7 @@ export default function CoursesPage() {
       const data = await response.json()
 
       console.log('API Response:', data) // 디버깅용
-      console.log('🔍 강의 목록 데이터:', data.data?.courses?.map(c => ({ 
+      console.log('🔍 강의 목록 데이터:', data.data?.courses?.map((c: any) => ({ 
         id: c.id, 
         title: c.title, 
         category: c.category, 

@@ -22,9 +22,9 @@ interface CourseForm {
   description: string
   instructor: string
   category: string
-  price: number
-  original_price: number
-  duration: number
+  price: number | string
+  original_price: number | string
+  duration: number | string
   level: 'beginner' | 'intermediate' | 'advanced'
   status: 'published' | 'draft' | 'archived'
   is_featured: boolean
@@ -328,7 +328,7 @@ export default function CreateCoursePage() {
               thumbnail_url: '',
               detail_image_url: '',
               video_url: '',
-              video_file: null
+              vimeo_url: ''
             });
           }}
           className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"

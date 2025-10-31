@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
             .select('rating')
             .eq('instructor', instructor.name)
 
-          const averageRating = reviews?.length > 0 
+          const averageRating = reviews && reviews.length > 0 
             ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
             : 0
 

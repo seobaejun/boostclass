@@ -83,6 +83,8 @@ interface SuccessStory {
 
 type ContentType = 'notices' | 'community' | 'reviews' | 'success-stories'
 
+type ContentItem = Notice | CommunityPost | Review | SuccessStory
+
 export default function ContentPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<ContentType>('community')
@@ -93,20 +95,20 @@ export default function ContentPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [editingItem, setEditingItem] = useState<any>(null)
-  const [editForm, setEditForm] = useState<any>({})
-  const [createForm, setCreateForm] = useState<any>({
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null)
+  const [editForm, setEditForm] = useState<Record<string, unknown>>({})
+  const [createForm, setCreateForm] = useState<Record<string, unknown>>({
     title: '',
     content: '',
-    priority: 'normal',
+    priority: 'medium',
     status: 'published'
   })
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<ContentItem[]>([])
   const [totalItems, setTotalItems] = useState(0)
   const [tabCounts, setTabCounts] = useState({
     notices: 0,
@@ -120,6 +122,8 @@ export default function ContentPage() {
   // 페이지네이션 계산 (서버 사이드 페이지네이션)
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   const paginatedItems = items // 서버에서 이미 페이지네이션된 데이터
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
 
   useEffect(() => {
     fetchContent()
@@ -141,7 +145,7 @@ export default function ContentPage() {
   }, [showCreateModal])
 
   // 핸들러 함수들
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: ContentItem) => {
     setSelectedItem(item)
     setShowDetailModal(true)
   }
@@ -151,20 +155,21 @@ export default function ContentPage() {
     setSelectedItem(null)
   }
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: ContentItem) => {
     setEditingItem(item)
     setEditForm({
-      title: item.title,
+      ...('title' in item ? { title: item.title } : 'course_title' in item ? { course_title: item.course_title } : {}),
       content: item.content,
-      category: item.category,
+      ...('category' in item ? { category: item.category } : {}),
       status: item.status,
-      tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
+      ...('tags' in item && Array.isArray(item.tags) ? { tags: item.tags.join(', ') } : ('tags' in item ? { tags: item.tags || '' } : {}))
     })
     setShowEditModal(true)
   }
 
   const handleSaveEdit = async () => {
     try {
+      if (!editingItem) return
       console.log('콘텐츠 수정 저장:', editForm)
       
       const { data: { session } } = await supabase.auth.getSession()
@@ -203,13 +208,14 @@ export default function ContentPage() {
     }
   }
 
-  const handleDeleteItem = (item: any) => {
+  const handleDeleteItem = (item: ContentItem) => {
     setEditingItem(item)
     setShowDeleteModal(true)
   }
 
   const handleConfirmDelete = async () => {
     try {
+      if (!editingItem) return
       console.log('콘텐츠 삭제:', editingItem)
       
       const { data: { session } } = await supabase.auth.getSession()
@@ -280,7 +286,8 @@ export default function ContentPage() {
       alert(`테스트 API 결과:\n상태: ${response.status}\n메시지: ${data.message}`)
     } catch (error) {
       console.error('🧪 테스트 API 오류:', error)
-      alert(`테스트 API 오류: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      alert(`테스트 API 오류: ${errorMessage}`)
     }
   }
 
@@ -322,11 +329,13 @@ export default function ContentPage() {
       try {
         responseText = await response.text()
       } catch (textError) {
-        responseText = '텍스트 읽기 실패: ' + textError.message
+        const errorMessage = textError instanceof Error ? textError.message : '알 수 없는 오류'
+        responseText = '텍스트 읽기 실패: ' + errorMessage
       }
       console.error('❌ 응답 텍스트:', responseText)
       console.error('❌ 응답 상태 재확인:', response.status, response.statusText)
-      alert(`API 응답 파싱 실패: ${jsonError.message}\n응답 상태: ${response.status}\n응답 텍스트: ${responseText}`)
+      const jsonErrorMessage = jsonError instanceof Error ? jsonError.message : '알 수 없는 오류'
+      alert(`API 응답 파싱 실패: ${jsonErrorMessage}\n응답 상태: ${response.status}\n응답 텍스트: ${responseText}`)
       return
     }
 
@@ -785,10 +794,21 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 paginatedItems.map((item, index) => (
                   <tr key={item.id || index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {(() => {
+                          if ('title' in item) return item.title;
+                          if ('course_title' in item) return item.course_title;
+                          return (item as ContentItem).id;
+                        })()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.instructor || item.author || '관리자'}
+                      {(() => {
+                        if ('instructor' in item) return String(item.instructor);
+                        if ('author' in item) return String(item.author);
+                        if ('user_name' in item) return String(item.user_name);
+                        return '관리자';
+                      })() as string}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.status)}`}>
@@ -797,35 +817,45 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                     </td>
                     {activeTab === 'notices' && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          item.priority === 'important' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {item.priority === 'important' ? '중요공지' : '일반공지'}
-                        </span>
+                        {('priority' in item) && (
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            (item as Notice).priority === 'high' 
+                              ? 'bg-red-100 text-red-800' 
+                              : (item as Notice).priority === 'medium'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {(item as Notice).priority === 'high' ? '높음' : (item as Notice).priority === 'medium' ? '보통' : '낮음'}
+                          </span>
+                        )}
                       </td>
                     )}
                     {activeTab === 'community' && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.category || '-'}
+                        {'category' in item ? (item.category || '-') : '-'}
                       </td>
                     )}
                     {activeTab === 'reviews' && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.rating ? '⭐'.repeat(item.rating) : '-'}
+                        {('rating' in item) ? ('⭐'.repeat((item as Review).rating)) : '-'}
                       </td>
                     )}
                     {activeTab === 'success-stories' && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.featured ? '추천' : '-'}
+                        {('featured' in item && item.featured) ? '추천' : '-'}
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.views || 0}
+                      {('views' in item && item.views) || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(item.createdAt || item.created_at).toLocaleDateString()}
+                      {(() => {
+                        const dateValue = 
+                          ('createdAt' in item && item.createdAt) ? String(item.createdAt) :
+                          ('created_at' in item && item.created_at) ? String(item.created_at) :
+                          new Date().toISOString();
+                        return new Date(dateValue).toLocaleDateString();
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2">
@@ -937,7 +967,14 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">제목</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedItem.title}</p>
+                <p className="mt-1 text-sm text-gray-900">
+                  {(() => {
+                    if (!selectedItem) return '';
+                    if ('title' in selectedItem) return selectedItem.title;
+                    if ('course_title' in selectedItem) return selectedItem.course_title;
+                    return (selectedItem as ContentItem).id;
+                  })()}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">내용</label>
@@ -945,7 +982,13 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">작성자</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedItem.author}</p>
+                <p className="mt-1 text-sm text-gray-900">
+                  {(() => {
+                    if ('author' in selectedItem) return (selectedItem as Notice | CommunityPost | SuccessStory).author;
+                    if ('user_name' in selectedItem) return (selectedItem as Review).user_name;
+                    return '관리자';
+                  })()}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">상태</label>
@@ -954,7 +997,13 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
               <div>
                 <label className="block text-sm font-medium text-gray-700">생성일</label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {new Date(selectedItem.createdAt || selectedItem.created_at).toLocaleDateString()}
+                  {(() => {
+                    const dateValue = 
+                      ('createdAt' in selectedItem && selectedItem.createdAt) ? String(selectedItem.createdAt) :
+                      ('created_at' in selectedItem && selectedItem.created_at) ? String(selectedItem.created_at) :
+                      new Date().toISOString();
+                    return new Date(dateValue).toLocaleDateString();
+                  })()}
                 </p>
               </div>
             </div>
@@ -980,7 +1029,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 <label className="block text-sm font-medium text-gray-700">제목</label>
                 <input
                   type="text"
-                  value={editForm.title || ''}
+                  value={('title' in editForm && editForm.title) ? String(editForm.title) : ('course_title' in editForm && editForm.course_title) ? String(editForm.course_title) : ''}
                   onChange={(e) => setEditForm({...editForm, title: e.target.value})}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -988,7 +1037,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
               <div>
                 <label className="block text-sm font-medium text-gray-700">내용</label>
                 <textarea
-                  value={editForm.content || ''}
+                  value={(editForm.content as string) || ''}
                   onChange={(e) => setEditForm({...editForm, content: e.target.value})}
                   rows={4}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -998,7 +1047,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 <div>
                   <label className="block text-sm font-medium text-gray-700">카테고리</label>
                   <select
-                    value={editForm.category || '정보공유'}
+                    value={('category' in editForm && editForm.category) ? String(editForm.category) : '정보공유'}
                     onChange={(e) => setEditForm({...editForm, category: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
@@ -1012,8 +1061,8 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
               <div>
                 <label className="block text-sm font-medium text-gray-700">상태</label>
                 <select
-                  value={editForm.status || 'draft'}
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  value={(editForm.status as string) || 'draft'}
+                  onChange={(e) => setEditForm({...editForm, status: e.target.value as 'published' | 'pending' | 'archived' | 'rejected'})}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="published">발행됨</option>
@@ -1028,7 +1077,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                   <label className="block text-sm font-medium text-gray-700">태그 (쉼표로 구분)</label>
                   <input
                     type="text"
-                    value={editForm.tags || ''}
+                    value={('tags' in editForm && editForm.tags) ? String(editForm.tags) : ''}
                     onChange={(e) => setEditForm({...editForm, tags: e.target.value})}
                     placeholder="태그1, 태그2, 태그3"
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -1039,7 +1088,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 <div>
                   <label className="block text-sm font-medium text-gray-700">우선순위</label>
                   <select
-                    value={editForm.priority || 'normal'}
+                    value={(editForm.priority as string) || 'normal'}
                     onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
@@ -1051,7 +1100,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={editForm.featured || false}
+                  checked={(editForm.featured as boolean) || false}
                   onChange={(e) => setEditForm({...editForm, featured: e.target.checked})}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
@@ -1111,7 +1160,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                   <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
                   <input
                     type="text"
-                    value={createForm.title || ''}
+                    value={(createForm.title as string) || ''}
                     onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     placeholder="제목을 입력하세요"
@@ -1123,7 +1172,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
                   <textarea
-                    value={createForm.content || ''}
+                    value={(createForm.content as string) || ''}
                     onChange={(e) => setCreateForm({...createForm, content: e.target.value})}
                     rows={8}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-vertical"
@@ -1136,7 +1185,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">우선순위</label>
                     <select
-                      value={createForm.priority || 'normal'}
+                      value={(createForm.priority as string) || 'medium'}
                       onChange={(e) => setCreateForm({...createForm, priority: e.target.value})}
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                       tabIndex={3}
@@ -1150,8 +1199,8 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
                   <select
-                    value={createForm.status || 'published'}
-                    onChange={(e) => setCreateForm({...createForm, status: e.target.value})}
+                    value={(createForm.status as string) || 'published'}
+                    onChange={(e) => setCreateForm({...createForm, status: e.target.value as 'published' | 'pending' | 'archived' | 'rejected'})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     tabIndex={4}
                   >

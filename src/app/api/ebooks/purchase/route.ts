@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const payload = verifyToken(token)
+    const payload = await verifyToken(token)
     if (!payload) {
       return NextResponse.json(
         { success: false, error: '유효하지 않은 토큰입니다.' },
