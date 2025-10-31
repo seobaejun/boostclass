@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
-import { successStories } from '@/data/successStories'
+import { successStories, type SuccessStory } from '@/data/successStories'
 import { 
   Star, 
   TrendingUp, 
@@ -24,21 +24,17 @@ import {
   DollarSign
 } from 'lucide-react'
 
-interface SuccessStory {
-  id: number
-  title: string
-  content: string
-  course_title?: string
-  author?: string
+type StoryWithContent = SuccessStory & { 
+  content?: string
+  featured?: boolean
   created_at?: string
   views?: number
   likes?: number
-  featured?: boolean
 }
 
 export default function SuccessStoryDetailPage() {
   const params = useParams()
-  const [story, setStory] = useState<SuccessStory | null>(null)
+  const [story, setStory] = useState<StoryWithContent | null>(null)
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(0)

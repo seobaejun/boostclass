@@ -85,6 +85,11 @@ type ContentType = 'notices' | 'community' | 'reviews' | 'success-stories'
 
 type ContentItem = Notice | CommunityPost | Review | SuccessStory
 
+// 타입 가드 함수들
+function isReview(item: ContentItem): item is Review {
+  return 'rating' in item
+}
+
 export default function ContentPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<ContentType>('community')
@@ -837,7 +842,7 @@ ALTER TABLE notices DISABLE ROW LEVEL SECURITY;`
                     )}
                     {activeTab === 'reviews' && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {('rating' in item) ? ('⭐'.repeat((item as Review).rating)) : '-'}
+                        {isReview(item) ? ('⭐'.repeat(item.rating)) : '-'}
                       </td>
                     )}
                     {activeTab === 'success-stories' && (
