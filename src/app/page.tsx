@@ -1,14 +1,26 @@
 'use client'
 
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import HeroSlider from '@/components/HeroSlider'
-import FreeCourseSection from '@/components/FreeCourseSection'
-import EarlyBirdSection from '@/components/EarlyBirdSection'
-import ScheduleSection from '@/components/ScheduleSection'
-import InstructorSection from '@/components/InstructorSection'
 import { Play, Star, Users, FileText, Calendar, Gift, Award, TrendingUp, UserPlus, Bell } from 'lucide-react'
+
+// 동적 import로 지연 로딩 (초기 로딩 속도 개선)
+const FreeCourseSection = dynamic(() => import('@/components/FreeCourseSection'), {
+  loading: () => <div className="py-16"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="animate-pulse"><div className="h-8 bg-gray-200 rounded w-64 mb-4"></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div><div className="h-96 bg-gray-200 rounded"></div></div></div></div></div>,
+  ssr: true
+})
+
+const EarlyBirdSection = dynamic(() => import('@/components/EarlyBirdSection'), {
+  loading: () => <div className="py-16 bg-orange-50"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="animate-pulse"><div className="h-8 bg-gray-200 rounded w-64 mb-4"></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><div className="h-80 bg-gray-200 rounded"></div><div className="h-80 bg-gray-200 rounded"></div><div className="h-80 bg-gray-200 rounded"></div></div></div></div></div>,
+  ssr: true
+})
+
+// 주석 처리된 컴포넌트들은 필요할 때만 동적 로딩
+// const ScheduleSection = dynamic(() => import('@/components/ScheduleSection'), { ssr: false })
+// const InstructorSection = dynamic(() => import('@/components/InstructorSection'), { ssr: false })
 
 export default function Home() {
   return (

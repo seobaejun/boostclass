@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 
+// Vercel에서 성능 최적화: 캐싱 설정 (60초)
+export const revalidate = 60
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 강의 데이터 조회 시작...')
@@ -136,6 +139,11 @@ export async function GET(request: NextRequest) {
           total: count || 0,
           totalPages: Math.ceil((count || 0) / limit),
         },
+      },
+    }, {
+      headers: {
+        // Vercel 캐싱 최적화: CDN 캐시 60초
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       },
     })
   } catch (error) {

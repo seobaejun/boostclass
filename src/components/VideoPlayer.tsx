@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import ReactPlayer from 'react-player'
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize, Settings } from 'lucide-react'
 
@@ -17,7 +17,7 @@ export default function VideoPlayer({
   onEnded,
   initialTime = 0,
 }: VideoPlayerProps) {
-  const playerRef = useRef<ReactPlayer | null>(null)
+  const playerRef = useRef<React.ElementRef<typeof ReactPlayer> | null>(null)
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)

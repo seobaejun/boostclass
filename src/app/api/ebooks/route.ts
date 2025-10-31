@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseReqResClient } from '@/lib/supabase'
 
+// Vercel에서 성능 최적화: 캐싱 설정 (60초)
+export const revalidate = 60
+
 export async function GET(request: NextRequest) {
   try {
     console.log('📚 전자책 API 호출 시작...')
@@ -57,6 +60,11 @@ export async function GET(request: NextRequest) {
         totalCount: allEbooks?.length || 0,
         publishedCount: ebooks?.length || 0
       }
+    }, {
+      headers: {
+        // Vercel 캐싱 최적화: CDN 캐시 60초
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     })
     
   } catch (error) {

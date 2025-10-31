@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Vercel에서 성능 최적화: 캐싱 설정 (60초)
+export const revalidate = 60
+
 // 더미 강사 데이터 함수
 function getDummyInstructors() {
   return [
@@ -242,6 +245,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       instructors: instructorsWithStats
+    }, {
+      headers: {
+        // Vercel 캐싱 최적화: CDN 캐시 60초
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     })
 
   } catch (error) {
@@ -252,6 +260,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       instructors: getDummyInstructors()
+    }, {
+      headers: {
+        // Vercel 캐싱 최적화: CDN 캐시 60초
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     })
   }
 }
